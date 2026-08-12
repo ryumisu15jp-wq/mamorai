@@ -37,9 +37,10 @@
 
   /* header */
   header.nav{position:sticky;top:0;z-index:50;background:rgba(13,22,40,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:72px;}
   .logo{display:flex;align-items:center;}
-  .logo-full{height:40px;width:auto;object-fit:contain;display:block;}
+  .logo-full{height:50px;width:auto;object-fit:contain;display:block;}
+  @media(max-width:520px){.logo-full{height:40px;}}
   .nav-links{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:#cbd5e1;}
   .nav-links a:hover{color:#fff;}
   .nav-cta{display:flex;gap:10px;align-items:center;}
