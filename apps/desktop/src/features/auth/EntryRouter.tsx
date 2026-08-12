@@ -9,6 +9,7 @@ import { App } from '../../App.js'
 import { CompanyLogin } from './CompanyLogin.js'
 import { SiteLogin } from './SiteLogin.js'
 import { TradminLogin } from './TradminLogin.js'
+import { signOut } from './authService.js'
 import type { Realm, Session } from './authTypes.js'
 
 function realmFromPath(pathname: string): Realm {
@@ -24,7 +25,7 @@ export function EntryRouter(): JSX.Element {
 
   if (session !== null) {
     // 認証後は本体アプリ。role/scope に応じてタブを出し分け（capabilitiesForRole）。
-    return <App session={session} onLogout={() => setSession(null)} />
+    return <App session={session} onLogout={() => { void signOut(); setSession(null) }} />
   }
   if (realm === 'tradmin') return <TradminLogin onLogin={setSession} />
   if (realm === 'site') return <SiteLogin onLogin={setSession} />

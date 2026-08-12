@@ -1,6 +1,7 @@
 // [Auth /co/] 会社（本社・権限者）ログイン: メール＋パスワード（＋任意MFA）。
 import { useState } from 'react'
-import { isValidEmail, type Session } from './authTypes.js'
+import type { Session } from './authTypes.js'
+import { signInCompany, AuthError } from './authService.js'
 
 export function CompanyLogin({ onLogin }: { onLogin: (s: Session) => void }): JSX.Element {
   const [email, setEmail] = useState('')
@@ -8,14 +9,18 @@ export function CompanyLogin({ onLogin }: { onLogin: (s: Session) => void }): JS
   const [mfa, setMfa] = useState('')
   const [useMfa, setUseMfa] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const submit = (): void => {
-    if (!isValidEmail(email)) { setErr('メールアドレスの形式が正しくありません'); return }
-    if (password.length < 8) { setErr('パスワードは8文字以上です'); return }
-    if (useMfa && !/^\d{6}$/.test(mfa)) { setErr('MFAコードは6桁です'); return }
-    setErr(null)
-    // 本結線時: Supabase Auth でメール/パスワード認証 → role(company_admin/manager) 解決 → 会社スコープセッション
-    onLogin({ realm: 'company', role: 'company_admin', email, scope: 'company', label: `会社: ${email}` })
+  const submit = async (): Promise<void> => {
+    setErr(null); setBusy(true)
+    try {
+      const s = await signInCompany(email, password)
+      onLogin(s)
+    } catch (e) {
+      setErr(e instanceof AuthError ? e.message : 'ログインに失敗しました')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -43,7 +48,7 @@ export function CompanyLogin({ onLogin }: { onLogin: (s: Session) => void }): JS
         </label>
       )}
       {err && <p className="auth-err" role="alert">{err}</p>}
-      <button type="button" className="btn btn-primary auth-submit" onClick={submit}>ログイン</button>
+      <button type="button" className="btn btn-primary auth-submit" onClick={submit} disabled={busy}>{busy ? 'ログイン中…' : 'ログイン'}</button>
       <div className="auth-links">
         <a href="#reset">パスワードを忘れた</a>
         <span className="muted">アカウントは管理者からの招待制です</span>
