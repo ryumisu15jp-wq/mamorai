@@ -1,0 +1,12 @@
+{
+  "name": "mamorai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MAMOR-AI 再開発 (Tauri desktop MVP) — TRAID pipeline",
+  "scripts": {
+    "test": "pnpm -r --filter ./packages/** test",
+    "test:core": "pnpm --filter @mamorai/input-core test",
+    "build:core": "pnpm --filter @mamorai/input-core build"
+  },
+  "packageManager": "pnpm@10.28.0"
+}

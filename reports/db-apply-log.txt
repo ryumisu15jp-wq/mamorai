@@ -1,0 +1,145 @@
+===== MAMOR-AI DB apply log (2026-08-11T07:30:13Z) =====
+
+----- APPLY: 0000_base_assumed.sql -----
+CREATE EXTENSION
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+RESULT: OK (0000_base_assumed)
+
+----- APPLY: 0100_report_additive.sql -----
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+RESULT: OK (0100_report_additive)
+
+----- APPLY: 0102_shift_additive.sql -----
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+RESULT: OK (0102_shift_additive)
+
+----- APPLY: 0103_notify_training_additive.sql -----
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+RESULT: OK (0103_notify_training_additive)
+
+===== VERIFY (2026-08-11T07:30:23Z) =====
+----- \dt (public tables) -----
+                     List of relations
+ Schema |              Name              | Type  |  Owner   
+--------+--------------------------------+-------+----------
+ public | app_site_members               | table | postgres
+ public | daily_reports                  | table | postgres
+ public | notification_confirmations     | table | postgres
+ public | notification_targets           | table | postgres
+ public | notifications                  | table | postgres
+ public | report_drafts                  | table | postgres
+ public | report_template_sections       | table | postgres
+ public | report_templates               | table | postgres
+ public | shift_constraints              | table | postgres
+ public | shift_optimization_assignments | table | postgres
+ public | shift_optimization_runs        | table | postgres
+ public | shift_overrides                | table | postgres
+ public | shift_preferences              | table | postgres
+ public | shifts                         | table | postgres
+ public | sites                          | table | postgres
+ public | staff                          | table | postgres
+ public | staff_qualifications           | table | postgres
+ public | template_section_configs       | table | postgres
+ public | training_records               | table | postgres
+(19 rows)
+
+----- table count -----
+19
+----- \d daily_reports -----
+                             Table "public.daily_reports"
+     Column      |           Type           | Collation | Nullable |      Default      
+-----------------+--------------------------+-----------+----------+-------------------
+ id              | uuid                     |           | not null | gen_random_uuid()
+ site_id         | uuid                     |           |          | 
+ reporter_id     | uuid                     |           |          | 
+ report_date     | date                     |           |          | 
+ status          | text                     |           |          | 
+ values          | jsonb                    |           |          | '{}'::jsonb
+ submitted_at    | timestamp with time zone |           |          | 
+ approved_at     | timestamp with time zone |           |          | 
+ approver_id     | uuid                     |           |          | 
+ created_at      | timestamp with time zone |           |          | now()
+ updated_at      | timestamp with time zone |           |          | now()
+ input_source    | text                     |           |          | 
+ template_id     | uuid                     |           |          | 
+ quick_preset_id | uuid                     |           |          | 
+ draft_payload   | jsonb                    |           |          | 
+ legacy_extras   | jsonb                    |           |          | 
+Indexes:
+    "daily_reports_pkey" PRIMARY KEY, btree (id)
+    "idx_daily_reports_site_date" btree (site_id, report_date)
+Foreign-key constraints:
+    "daily_reports_site_id_fkey" FOREIGN KEY (site_id) REFERENCES sites(id)
+
+----- \d shifts -----
+                                Table "public.shifts"
+    Column     |           Type           | Collation | Nullable |      Default      
+---------------+--------------------------+-----------+----------+-------------------
+ id            | uuid                     |           | not null | gen_random_uuid()
+ site_id       | uuid                     |           |          | 
+ staff_id      | uuid                     |           |          | 
+ work_date     | date                     |           |          | 
+ created_at    | timestamp with time zone |           |          | now()
+ updated_at    | timestamp with time zone |           |          | now()
+ work_type     | text                     |           |          | 
+ cell_source   | text                     |           |          | 
+ legacy_extras | jsonb                    |           |          | 
+Indexes:
+    "shifts_pkey" PRIMARY KEY, btree (id)
+    "idx_shifts_site_date" btree (site_id, work_date)
+    "idx_shifts_staff_date" btree (staff_id, work_date)
+Foreign-key constraints:
+    "shifts_site_id_fkey" FOREIGN KEY (site_id) REFERENCES sites(id)
+    "shifts_staff_id_fkey" FOREIGN KEY (staff_id) REFERENCES staff(id)
+
+
+===== IDEMPOTENCY re-run (0000..0103) =====
+RE-RUN OK: 0000_base_assumed
+RE-RUN OK: 0100_report_additive
+RE-RUN OK: 0102_shift_additive
+RE-RUN OK: 0103_notify_training_additive

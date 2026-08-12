@@ -1,0 +1,29 @@
+{
+  "name": "@mamorai/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MAMOR-AI リスク/AI 秘匿ゲートウェイ (Node/Express+TS). Claude APIキーはこの層にのみ存在 (ADR-003)",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run src/db"
+  },
+  "dependencies": {
+    "@mamorai/input-core": "workspace:*",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

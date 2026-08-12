@@ -1,0 +1,229 @@
+Pager usage is off.
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 3
+INSERT 0 2
+INSERT 0 2
+SET
+INSERT 0 2
+INSERT 0 2
+RESET
+===================================================================
+=== [A] app_client + app.user_id=u_a (site1担当) : 担当外(site2)は全て0件が PASS ===
+===================================================================
+SET
+              set_config              
+--------------------------------------
+ e2000000-0000-0000-0000-00000000000a
+(1 row)
+
+-- sites: 自現場のみ(=1) / 全体(=2)ではない --
+ site2_visible_must_be_0 | total_visible_expect_1 
+-------------------------+------------------------
+                       0 |                      1
+(1 row)
+
+-- staff: 他現場隊員は不可視 --
+ staffb_visible_must_be_0 
+--------------------------
+                        0
+(1 row)
+
+-- report_templates / sections / template_section_configs --
+ tpl_site2_must_be_0 
+---------------------
+                   0
+(1 row)
+
+ tplsec_site2_must_be_0 
+------------------------
+                      0
+(1 row)
+
+ tsc_site2_must_be_0 
+---------------------
+                   0
+(1 row)
+
+-- shift_constraints / shift_preferences --
+ constraints_site2_must_be_0 
+-----------------------------
+                           0
+(1 row)
+
+ prefs_site2_must_be_0 
+-----------------------
+                     0
+(1 row)
+
+-- staff_qualifications / training_records(PII) : 他現場隊員分は不可視 --
+ quals_staffb_must_be_0 
+------------------------
+                      0
+(1 row)
+
+ training_staffb_must_be_0 
+---------------------------
+                         0
+(1 row)
+
+-- notifications: site2宛機密は不可視 / broadcast(NULL)は可視 --
+ ntf_site2_must_be_0 | ntf_broadcast_expect_1 | ntf_site1_expect_1 
+---------------------+------------------------+--------------------
+                   0 |                      1 |                  1
+(1 row)
+
+-- notification_targets / notification_confirmations: site2分は不可視 --
+ ntftargets_site2_must_be_0 
+----------------------------
+                          0
+(1 row)
+
+ ntfconf_staffb_must_be_0 
+--------------------------
+                        0
+(1 row)
+
+-- 群B: 担当外(site2) run / assignment は不可視 --
+ runs_site2_must_be_0 
+----------------------
+                    0
+(1 row)
+
+ assign_site2_must_be_0 
+------------------------
+                      0
+(1 row)
+
+===================================================================
+=== [B] HIGH-1: app_client が app.role=service を偽装しても群B INSERT は拒否 ===
+===================================================================
+ set_config 
+------------
+ service
+(1 row)
+
+-- 次の INSERT は current_user=app_client のため RLS で ERROR になるのが PASS --
+psql:/home/claude/mamorai/reports/rls-hardening-verification.sql:133: ERROR:  permission denied for table shift_optimization_runs
+-- assignments も同様に拒否されるのが PASS --
+psql:/home/claude/mamorai/reports/rls-hardening-verification.sql:136: ERROR:  permission denied for table shift_optimization_assignments
+ set_config 
+------------
+ 
+(1 row)
+
+RESET
+===================================================================
+=== [C] app_client + app.user_id=u_b (site2担当) : 対称に site1 が0件 ===
+===================================================================
+SET
+              set_config              
+--------------------------------------
+ e2000000-0000-0000-0000-00000000000b
+(1 row)
+
+ site1_visible_must_be_0 
+-------------------------
+                       0
+(1 row)
+
+ quals_staffa_must_be_0 
+------------------------
+                      0
+(1 row)
+
+ training_staffa_must_be_0 
+---------------------------
+                         0
+(1 row)
+
+ ntf_site1_must_be_0 
+---------------------
+                   0
+(1 row)
+
+ constraints_site1_must_be_0 
+-----------------------------
+                           0
+(1 row)
+
+ runs_site1_must_be_0 
+----------------------
+                    0
+(1 row)
+
+RESET
+===================================================================
+=== [D] app_service ロール: 群B INSERT が成立（正当なサーバ経路） ===
+===================================================================
+SET
+-- 次の INSERT は成功し run_id を返すのが PASS --
+                run_id                
+--------------------------------------
+ 24ebab3b-8879-4e59-b0bf-a608a0af935f
+(1 row)
+
+INSERT 0 1
+-- app_service は群B を全件 SELECT 可（下案確認） --
+ service_sees_both_runs_expect_t 
+---------------------------------
+ t
+(1 row)
+
+-- 注: app_service は DELETE 権限を持たない（最小権限）。後始末は superuser で行う --
+RESET
+DELETE 1
+===================================================================
+=== cleanup ===
+===================================================================
+DELETE 2
+DELETE 2
+DELETE 3
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+DELETE 2
+===================================================================
+=== 総括（全チェック PASS） ===
+=== HIGH-2: [A]/[C] の *_MUST_BE_0 系は全て 0 = 担当外現場データ越境0件。 ===
+===         対象表: sites/staff/report_templates/report_template_sections/ ===
+===         template_section_configs/shift_constraints/shift_preferences/ ===
+===         staff_qualifications/training_records/notifications/ ===
+===         notification_targets/notification_confirmations/群B runs・assignments。 ===
+===         broadcast(NULL)通知と自現場データは可視（機能維持）。 ===
+=== HIGH-1: [B] app_client は app.role=service を偽装しても群B INSERT 不可 ===
+===         （permission denied = GRANT層で遮断。RLSの手前で二重に拒否）。 ===
+=== [D]: app_service ロールでのみ群B INSERT が成立し run_id を返す（正当経路）。 ===
+=== DONE ===

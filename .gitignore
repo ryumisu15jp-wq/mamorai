@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+out/
+packages/*/dist/
+apps/*/dist/
+apps/*/src-tauri/target/
+
+# deploy artifacts
+mamorai-deploy.zip
+web/*.png
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# logs / OS
+*.log
+.DS_Store
+
+# vitest / coverage
+coverage/

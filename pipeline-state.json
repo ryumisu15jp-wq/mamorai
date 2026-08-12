@@ -1,0 +1,311 @@
+{
+  "project_name": "MAMOR-AI（再開発 / Tauriデスクトップ版 MVP）",
+  "idea": "既存MAMOR-AI（React+Vite+Node/Express+Supabase）をTauriラップのPC専用デスクトップアプリとして再開発。日報・月報に軽量入力フロー（UI分離の共通入力ロジック層）、シフト・配置表に中小警備会社向け低価格AIシフト最適化（既存Claude API予測エンジン拡張）を追加。既存6モジュール/25テーブルは破壊的変更なし・追加のみで継承。TRAIDでSprint単位に再構築。",
+  "started_at": "2026-08-10",
+  "current_sprint": 4,
+  "run_mode": "試作(推定前提) — 既存コードベース未提供のままSprint1を実走（RYUGEN選択②）",
+  "constraints": {
+    "platform": "Tauri v2 (WebViewラップ/WebView2), PC専用MVP",
+    "frontend": "React + Vite, Supabaseへ直接接続(RLS)",
+    "backend": "Node.js/Express + AI予測ゲートウェイ維持(Claude APIキー秘匿)",
+    "db": "Supabase, スキーマは追加のみ（破壊的変更禁止, CI2段ゲートで機械担保）",
+    "shared_logic": "packages/input-core (UI/DB非依存の共通入力ロジック層, Expo再利用可)",
+    "ai_feature": "AIシフト最適化 = LLM構造化→OR-Tools CP-SAT→管制員確認(HITL)"
+  },
+  "phases": {
+    "phase0_trend_research": {
+      "status": "done",
+      "output": "spec/trend-research-report.md"
+    },
+    "phase1a_planner": {
+      "status": "done",
+      "output": "spec/behavioral-spec.md",
+      "note": "25 REQ + 4 NFR, Sprint 4本"
+    },
+    "phase1b_architect": {
+      "status": "done (v1.1)",
+      "output": "spec/architecture.md",
+      "note": "ADR 8件"
+    },
+    "phase1b_db_database_engineer": {
+      "status": "done (v1.1)",
+      "output": "spec/database-design.md"
+    },
+    "phase1c_spec_validator": {
+      "status": "done",
+      "output": "spec/spec-validation-report.md",
+      "score": "80→91 APPROVED"
+    }
+  },
+  "sprint1": {
+    "theme": "共通入力ロジック層 packages/input-core + 1分日報コア (REQ-001..007)",
+    "phase2a_tdd_writer": {
+      "status": "done",
+      "note": "49テスト作成→RED (43 fail)"
+    },
+    "phase2b_generator": {
+      "status": "done",
+      "note": "実装→GREEN 49/49, coverage 100%/91%branch"
+    },
+    "phase2b_ui_frontend": {
+      "status": "done",
+      "note": "apps/desktop 1分日報画面 + Tauri v2スケルトン, vite build成功"
+    },
+    "phase3_5_evaluator": {
+      "status": "done",
+      "result": "PASS (5ゲート全通過, 0 CRITICAL)",
+      "output": "reports/sprint1-evaluation.md"
+    },
+    "remediation": {
+      "status": "done",
+      "note": "Evaluator指摘 HIGH 2件(H-1 tap計数/H-2 invalid_type)＋MEDIUM(Error export)を即時修正。回帰テスト追加。最終 56/56 GREEN。"
+    },
+    "verified": {
+      "core_tests": "56/56 GREEN",
+      "coverage": "lines/funcs/stmts 100%, branches 91%",
+      "desktop_tsc": "clean",
+      "vite_build": "success",
+      "migration": "additive-only (no destructive DDL)"
+    }
+  },
+  "halt": true,
+  "halt_reason": "本採用フェーズ(DB結合)PASS。推定スキーマで実Postgres結合・RLS越境ゼロ・データ往復を実証。実DDL/実Supabase結線がRYUGEN提供待ちの唯一の残点。",
+  "fail_count": 0,
+  "awaiting_ryugen_approval": true,
+  "open_decision_for_ryugen": "(A)実25テーブルDDL/実Supabase認証を提供→本番結線(0000置換・auth.uid結線・実接続) / (B)このDB結合実証込みプロトタイプをレビュー(README+検証ログ同梱) / (C)追加要望",
+  "blockers": [
+    "UQ-01: 既存25テーブル実DDL・現場メンバーシップ表が未提供。DB結合/RLS/実Tauriビルドは未検証。",
+    "UQ-03: 1分日報の必須項目最小集合・工程数上限(現状 budget=10タップ で暫定実装)。"
+  ],
+  "next_phase": "実DDL提供後: DB結合フェーズ(RLS検証・実Claude I/F結線・OR-Tools差替・Tauri実ビルド・E2E)",
+  "sprint2": {
+    "theme": "月報集計 + 日報一覧・承認・リスク連携 (REQ-008..015)",
+    "phase2a_tdd_writer": {
+      "status": "done",
+      "note": "81テスト作成→RED(66 fail)"
+    },
+    "phase2b_generator": {
+      "status": "done",
+      "note": "workflow/search/aggregate/exportTable/risk-view実装→GREEN"
+    },
+    "phase2b_ui_gw": {
+      "status": "done",
+      "note": "月報/一覧/リスク画面 + server/routes/risk.ts(Claude秘匿ゲートウェイ, キー注入モック)"
+    },
+    "phase3_5_evaluator": {
+      "status": "done",
+      "result": "PASS(5ゲート全通過, 0 CRITICAL/HIGH, MEDIUM5/LOW4)",
+      "output": "reports/sprint2-evaluation.md"
+    },
+    "verified": {
+      "core_tests": "137/137 GREEN",
+      "coverage": "lines/funcs 100%, branches 93%",
+      "desktop": "tsc clean + vite build成功",
+      "server": "tsc clean + vitest 3/3",
+      "secrets": "ハードコード無し(envのみ)"
+    },
+    "backlog_for_sprint3": [
+      "M1 aggregateCounters を counter限定化(テンプレート引数)",
+      "M4 /api/risk 認証・レート制限",
+      "承認率分母(OQ-04)"
+    ]
+  },
+  "uq02_answer": "RYUGEN指示: シフト制約は拡張型フレームワークにする。カテゴリ=legal(国/労基法), insurance(保険), company(会社規程), shift(勤務条件), other(その他/カスタム)。各制約は hard/soft 指定可。ユーザーが後から制約を追加できる(データ駆動+評価器レジストリ)。",
+  "sprint3": {
+    "theme": "シフト/配置表 + 拡張制約FW + AIシフト最適化 (REQ-016..021)",
+    "phase2a_tdd_writer": {
+      "status": "done",
+      "note": "64テスト→RED(61 fail)"
+    },
+    "phase2b_generator": {
+      "status": "done",
+      "note": "shift層実装→201/201 GREEN(初回)"
+    },
+    "phase2b_ui_gw": {
+      "status": "done",
+      "note": "シフト/配置表/制約エディタ/AI最適化 + server shift-optimize(claude/optimizer)"
+    },
+    "phase3_5_evaluator": {
+      "status": "done",
+      "result": "FAIL(retry0)→PASS(retry1)",
+      "output": "reports/sprint3-evaluation.md"
+    },
+    "retrospective": "拡張制約FWの『未知kind=スキップ』はsoftのみ安全、hardはfail-safe(評価不能→feasible=false)にすべき。労基系kindは組込みで実装必須。UI確定はサーバ権威に統一。",
+    "remediation_retry1": {
+      "status": "done",
+      "note": "C1(未登録hard→feasible=false, code:'unevaluable'), min_rest_hours+shiftTimes実装, satisfied虚偽表示是正, greedyハード回避, H3 UI確定をserver/api/shift/confirm経由化。テスト+31→225 GREEN, branch91.13%"
+    },
+    "verified": {
+      "core_tests": "225/225 GREEN",
+      "coverage": "lines/stmts 99%, funcs 100%, branches 91%",
+      "desktop": "tsc clean + vite build成功",
+      "server": "tsc clean + vitest 8/8",
+      "migration": "0102 additive-only",
+      "secrets": "ハードコード無し"
+    },
+    "open_for_later": [
+      "H5 実RLS/confirm認証(DB結合時)",
+      "M1 制約レジストリのDI化(グローバル汚染回避)",
+      "実Claude I/F(OQ-05)",
+      "OR-Tools CP-SAT差し替え",
+      "Tauri実ビルド",
+      "UIコンポーネントテスト/E2E"
+    ]
+  },
+  "sprint4": {
+    "theme": "通知・教育記録 + テンプレート設定 + Tauri統合 (REQ-022..025)",
+    "phase2a_tdd_writer": {
+      "status": "done",
+      "note": "37テスト→RED(33 fail)"
+    },
+    "phase2b_generator": {
+      "status": "done",
+      "note": "notify/training/template実装→GREEN, 追加のみ0103"
+    },
+    "phase2b_ui_tauri": {
+      "status": "done",
+      "note": "通知/教育/テンプレ設定画面 + tauriBridge(DI)+src-tauri最小コマンド, desktop vitest 4/4"
+    },
+    "phase3_5_evaluator": {
+      "status": "done",
+      "result": "PASS(5ゲート全通過, 0 CRITICAL/HIGH)",
+      "output": "reports/sprint4-evaluation.md"
+    },
+    "remediation": {
+      "status": "done",
+      "note": "M2 過去集計非破壊の回帰テスト追加, M1 CSP設定。最終 input-core 264/264 GREEN"
+    },
+    "verified": {
+      "core_tests": "264/264 GREEN",
+      "desktop": "tsc clean+vite build+vitest 4/4",
+      "server": "vitest 8/8",
+      "migration": "0103 additive-only",
+      "secrets": "無し"
+    }
+  },
+  "project_status": "Sprint1-6 全完了＋本採用DB結合実証＋3系統ログイン導線/ロール別アクセス制御/出力センター/サービスページ・LP/デプロイ設定。純ロジック層331テスト、UI 11画面(出力センター含む)、3系統ログイン、Node/Expressゲートウェイ2種。残: 実認証(Supabase Auth/MFA)結線・実DDL置換・出力エンジンの実データ結線・Tauri実ビルド・実ホスティング配信(DNS/アカウント要)。",
+  "phase": "本採用フェーズ(DB結合実証) 完了",
+  "production_phase": {
+    "mode": "推定スキーマを正式化しライブPostgresで実結合を実証(実Supabase不要)",
+    "db1_base_schema": {
+      "status": "done",
+      "note": "0000_base_assumed.sql(推定既存: sites/staff/app_site_members/daily_reports/shifts) + 0100/0102/0103 をライブDBへ0エラー適用。総19表"
+    },
+    "db2_rls": {
+      "status": "done→FAIL→PASS",
+      "note": "0200_rls.sql + 是正0202_rls_hardening.sql。全18テナント表RLS+force、最小GRANT、service分離(app_service)"
+    },
+    "db3_data_access": {
+      "status": "done",
+      "note": "server/src/db (pool withUser/withService, reportRepo/shiftRepo) + 実DB往復統合テスト"
+    },
+    "db4_evaluator": {
+      "status": "done",
+      "result": "FAIL(retry0: HIGH-1 service詐称/HIGH-2 越境読取)→PASS(retry1)",
+      "output": "reports/production-phase-evaluation.md"
+    },
+    "verified_on_live_db": {
+      "migrations": "0000/0100/0102/0103/0200/0201/0202 全て0エラー・冪等・破壊的DDLゼロ",
+      "rls": "担当外現場データ 全テナント表0件、越境INSERT拒否、群B書込はapp_serviceのみ(app_clientはGUC偽装でも不可)",
+      "roundtrip": "日報 作成/取得/承認WF が実DBで往復(RLSセッション下)",
+      "tests": "input-core 264/264, server 27/27(実DB統合含む), desktop 4/4"
+    },
+    "real_ddl_switch_points": [
+      "0000_base_assumed.sql を実25テーブルDDLへ置換",
+      "app_user_site_ids() を auth.uid() ベースへ",
+      "app_is_service()/app_client・app_service を Supabase auth/service_role JWT へ結線",
+      "DATABASE_URL/DATABASE_URL_SERVICE を実環境値へ"
+    ],
+    "open_nonblocking": [
+      "MEDIUM-1 子表staff直GRANTをdefiner関数へ隔離",
+      "LOW-1 user_id必須アサーション"
+    ]
+  },
+  "sprint5": {
+    "theme": "HaiTO統合・超越（3業態マスタ/AI条件/リスク集計/ダッシュボード/成果物/新日報）",
+    "differentiation": "reports外: haito/HaiTOを超える設計.md（一気通貫・テンプレ駆動3業態・1分日報・HITL/フェイルセーフ・拡張制約・テナント分離実証）",
+    "s5_1_masters": {
+      "status": "done",
+      "note": "業態マスタ層(商業19/興行19/運営13インシデント, 24/24/26ポジション, AI条件 特性/共通/特殊)をデータ駆動実装"
+    },
+    "s5_2_risk": {
+      "status": "done",
+      "note": "buildPredictionInput・riskRanking・positionRiskLevels・timeslotRiskLevels、RiskItemにtimeslot追加"
+    },
+    "s5_3_dashboard": {
+      "status": "done",
+      "note": "改良ダッシュボード(HaiTO構成再現+配置/AIシフト導線)。tsc0/vite build成功/desktop vitest 4/4。スクショ提示"
+    },
+    "s5_4_outputs_2sites": {
+      "status": "done(交通)/partial(ららテラス)",
+      "note": "交通誘導(立川立飛)の配置表を実データ生成(287人日,0エラー)。ららテラスは施設警備日誌形式(BHT日報型)につき日報テンプレ側で対応"
+    },
+    "s5_5_new_report": {
+      "status": "done",
+      "note": "buildBusinessReportTemplate(業態→基本情報+特性/共通/特殊条件)+インシデント×ポジション イベントログUI。業態切替で条件/インシデント/ポジション一括切替。出力導線(PDF/Excel書戻し)スタブ。input-core 307/307 GREEN / 対応記録を必須4項目(対応時間・対応者・対応内容・事案内容)＋任意タグ(種別・ポジション)に改訂。部分入力行の必須チェック実装。HaiTO表記除去。"
+    },
+    "verified": {
+      "core_tests": "303/303 GREEN",
+      "haito_coverage": "lines/stmts 100%, branch 93%",
+      "tsc": "clean"
+    },
+    "status": "全項目(S5-1〜S5-5)完了"
+  },
+  "sprint6": {
+    "theme": "現場差異吸収: (あ)対応記録→データ項目×件数の自動集計 / (い)日報セクション(巡回/点検/特記/継続不具合)を設定で現場ごとに追加・切替",
+    "s6_a_tally": {
+      "status": "done",
+      "note": "tallyResponsesByType(incidentType集計・件数降順/種別昇順・空除外)実装(GREEN)。日報入力に『データ項目×件数(自動集計)』カードをリアルタイム表示で結線。"
+    },
+    "s6_i_site_sections": {
+      "status": "done",
+      "note": "SITE_SECTION_PRESETS(巡回=gate/点検=check(AED等)/特記=meta/継続不具合=meta) + listSitePresetKinds/getSitePreset(deep copy, 未知throw)。applyTemplateConfig を extraSections対応(末尾追加・既存ID無視・disabledで無効化・非破壊)。テンプレ設定UIに『現場セクションの追加』(プリセット選択chip+削除+ON/OFF+プレビュー)を結線。"
+    },
+    "verified": {
+      "core_tests": "315/315 GREEN (s6_sitesections 8/8)",
+      "desktop_tsc": "clean",
+      "non_destructive": "extraSectionsは追加のみ・元テンプレ不変・過去集計に影響なし(回帰テスト含む)"
+    },
+    "s6_u_output_engine": {
+      "status": "done",
+      "note": "output/outputDef.ts: OutputDef(データ駆動) + getByPath/resolveCellWrites(Excel書き戻しをデータ化・欠損は空文字)/renderOutputDoc(PDFレイアウトをデータ化)/defaultOutputDefs(配置予定表・配置表・月次報告書の既定PDF定義)。s6u_output.test.ts 9/9 GREEN。新現場・新様式は定義データ追加のみ(コード改修なし)。"
+    },
+    "auth_routing": {
+      "status": "done",
+      "note": "3系統ログイン導線: /co/(会社=メール+パスワード+任意MFA), /s/(施設=会社識別コード+施設コード+現場PIN, 単一現場スコープ), /tradmin/(運営=メール+パスワード+MFA必須, 別レルム→将来SSO)。EntryRouterがpathnameで振り分け。認証設計は『認証・ログイン導線設計.md』。実認証(Supabase Auth/MFA)は本結線フェーズ。3画面スクショ確認済。"
+    },
+    "marketing_pages": {
+      "status": "done",
+      "note": "web/index.html(サービスページ=…com/)＋web/lp.html(LP=…com/lp, 問合せフォーム/FAQ)。MAMOR-AIブランド(濃紺/青)。スクショ確認済。ドメイン基点はenv化前提。"
+    },
+    "authz_role_gating": {
+      "status": "done",
+      "note": "auth/authz.ts: capabilitiesForRole/canAccess(段階的包含 operator⊂manager⊂admin⊂platform)。authz.test.ts 7/7 GREEN。App が session.role の capability でタブ出し分け(現場=4タブ, 本社管理者=14タブ 等)、サイドナビにロール/scope/ログアウト表示。EntryRouterがsession/onLogoutを伝播。現場ログイン→4タブ・会社→14タブをスクショ確認。"
+    },
+    "output_center_ui": {
+      "status": "done",
+      "note": "features/output/OutputCenter.tsx: defaultOutputDefs+renderOutputDoc で配置予定表/配置表/月次報告書をプレビュー、resolveCellWrites で既存Excel書き戻しプラン(原本 AQ14/AQ37/L43)を可視化。出力タブをApp/capabilityに結線。スクショ確認済(月次報告書＋書き戻しプラン)。"
+    },
+    "deploy_config": {
+      "status": "done",
+      "note": "vite base を env(VITE_BASE)切替。deploy/build-web.sh が out/ を組立(/=サービス, /lp=LP, /app=SPA)。deploy/vercel.json が /co /s /tradmin → /app/index.html にrewrite+assetキャッシュ。deploy/デプロイ設計.md。out/を実サーブし /,/lp,/co/,/s/ を0エラー検証。SPA title の『1分日報』除去。"
+    },
+    "verified": {
+      "core_tests": "331/331 GREEN (authz 7/7, s6u 9/9, s6 8/8 含む)",
+      "desktop": "tsc clean + vite build + vitest 4/4",
+      "web_deploy": "out/ 実サーブで /,/lp,/co/,/s/ 全て0エラー"
+    },
+    "status": "(あ)(い)(う)完了＋3系統ログイン導線＋ロール別アクセス制御＋出力センターUI＋サービスページ/LP＋デプロイ設定。input-core 331/331・desktop 4/4 GREEN。"
+  },
+  "naming_change": "『1分日報』名称は廃止 → タブ『日報入力』(業態別構造化入力)＋『日報入力(簡易)』(旧QuickDailyReport)",
+  "haito_note": "訂正: HaiTOは他社(別システム会社)の製品。当システムMAMOR-AIの名称ではない。UIのHaiTO表記を除去。HaiTOは参考事例として扱う。",
+  "deployment": {
+    "now": "Web版を TRYANGROW.com のサブドメイン(mamorai.tryangrow.com)で運用",
+    "later": "独自ドメインへ移行(DNS張替のみ, コード変更不要にURL基点をenv化)",
+    "frontend_host": "Vercel等(静的) — CNAME: mamorai → host",
+    "per_site": "サブパス /s/{siteId}（RLSでテナント分離）",
+    "api_gateway": "api.tryangrow.com 等(Node/Express, Claude鍵秘匿)",
+    "db": "Supabase managed",
+    "dual": "同一Reactコードを Web と Tauri で両出し可能"
+  }
+}

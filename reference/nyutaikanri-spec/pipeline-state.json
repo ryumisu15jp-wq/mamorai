@@ -1,0 +1,42 @@
+{
+  "project_name": "入退管理システム",
+  "idea": "入退管理システム（業者・来館者・車両の入退を一元管理する汎用SaaS）",
+  "started_at": "2026-08-10",
+  "current_sprint": 0,
+  "phases": {
+    "phase0_trend_research": {
+      "status": "done",
+      "owner": "trend-researcher",
+      "output": "spec/trend-research-report.md"
+    },
+    "phase1a_planner": {
+      "status": "done (v1.1, revised after CONDITIONAL)",
+      "owner": "planner",
+      "output": "spec/behavioral-spec.md"
+    },
+    "phase1b_architect": {
+      "status": "done",
+      "owner": "architect",
+      "output": "spec/architecture.md"
+    },
+    "phase1b_db_database_engineer": {
+      "status": "done",
+      "owner": "database-engineer",
+      "output": "spec/database-design.md"
+    },
+    "phase1c_spec_validator": {
+      "status": "done",
+      "owner": "spec-validator",
+      "output": "spec/spec-validation-report.md",
+      "score": "83 (CONDITIONAL) -> 97 (APPROVED) after fixes",
+      "result": "APPROVED"
+    }
+  },
+  "halt": false,
+  "fail_count": 0,
+  "awaiting_ryugen_approval": true,
+  "open_decision_for_ryugen": "Sprint1 (TDD実装) に進むか、Open Questions (OQ-01〜06) の回答を先に行うか",
+  "github_repo": null,
+  "sibling_project": "警備員検定・資格試験対策アプリ（別Supabaseプロジェクト、データ非共有）",
+  "next_phase": "Sprint1: TDD-Writer -> Generator -> Refactor -> Security/Adversary -> Evaluator"
+}

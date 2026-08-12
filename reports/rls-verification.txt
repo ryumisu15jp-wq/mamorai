@@ -1,0 +1,177 @@
+Pager usage is off.
+Timing is off.
+DO
+CREATE ROLE
+GRANT
+GRANT
+BEGIN
+                               info                               
+------------------------------------------------------------------
+ === role app_user attributes (superuser=f, bypassrls=f 必須) ===
+(1 row)
+
+ rolname  | rolsuper | rolbypassrls | rolcanlogin 
+----------+----------+--------------+-------------
+ app_user | f        | f            | t
+(1 row)
+
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+SET
+INSERT 0 1
+RESET
+                                   info                                   
+--------------------------------------------------------------------------
+ === 準備データ投入完了（sites=2, members=2, daily_reports=2, runs=1）===
+(1 row)
+
+SET
+SET
+RESET
+                                             info                                              
+-----------------------------------------------------------------------------------------------
+ ################ 検証コンテキスト: SET ROLE app_user; app.user_id=u_a(site1) ################
+(1 row)
+
+ current_role |             app_user_id              | app_role 
+--------------+--------------------------------------+----------
+ app_user     | aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa | 
+(1 row)
+
+                             info                             
+--------------------------------------------------------------
+ --- CHECK1: daily_reports 可視件数（site1のみ見える想定）---
+(1 row)
+
+               site_id                | is_own_site | visible 
+--------------------------------------+-------------+---------
+ 11111111-1111-1111-1111-111111111111 | t           |       1
+(1 row)
+
+           check_name            | actual | expected | result 
+---------------------------------+--------+----------+--------
+ CHECK1a own-site(site1) visible |      1 |        1 | PASS
+(1 row)
+
+            check_name            | actual | expected | result 
+----------------------------------+--------+----------+--------
+ CHECK1b cross-site(site2) hidden |      0 |        0 | PASS
+(1 row)
+
+                 check_name                  | actual | expected | result 
+---------------------------------------------+--------+----------+--------
+ CHECK1c staff_qualifications own-only(=1件) |      1 |        1 | PASS
+(1 row)
+
+                                  info                                   
+-------------------------------------------------------------------------
+ --- CHECK2: site2 への daily_reports INSERT（RLS違反で失敗する想定）---
+(1 row)
+
+SAVEPOINT
+psql:/home/claude/mamorai/reports/rls-verification.sql:127: ERROR:  new row violates row-level security policy for table "daily_reports"
+ROLLBACK
+            check_name             |                                   note                                   
+-----------------------------------+--------------------------------------------------------------------------
+ CHECK2 cross-site INSERT rejected | RLS違反(error)を期待。上に ERROR: new row violates ... が出ていれば PASS
+(1 row)
+
+                           info                           
+----------------------------------------------------------
+ --- CHECK2b: 自現場 site1 への INSERT（成功する想定）---
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+           check_name            |               note                
+---------------------------------+-----------------------------------
+ CHECK2b own-site INSERT allowed | エラーが出ず INSERT 0 1 なら PASS
+(1 row)
+
+ROLLBACK
+                                          info                                           
+-----------------------------------------------------------------------------------------
+ --- CHECK3: 群B shift_optimization_runs INSERT（クライアント書込不可＝失敗する想定）---
+(1 row)
+
+SAVEPOINT
+psql:/home/claude/mamorai/reports/rls-verification.sql:146: ERROR:  new row violates row-level security policy for table "shift_optimization_runs"
+ROLLBACK
+              check_name               |                        note                        
+---------------------------------------+----------------------------------------------------
+ CHECK3 group-B client INSERT rejected | RLS違反(error)を期待。上に ERROR が出ていれば PASS
+(1 row)
+
+              check_name               | actual | expected | result 
+---------------------------------------+--------+----------+--------
+ CHECK3b group-B SELECT own-site(=1件) |      1 |        1 | PASS
+(1 row)
+
+SET
+                                    info                                    
+----------------------------------------------------------------------------
+ ################ 検証コンテキスト: app.user_id=u_b(site2) ################
+(1 row)
+
+                    check_name                    | site2_visible | site1_visible | result 
+--------------------------------------------------+---------------+---------------+--------
+ CHECK4 u_b sees site2 only(=1), site1 hidden(=0) |             1 |             0 | PASS
+(1 row)
+
+SET
+                                                info                                                
+----------------------------------------------------------------------------------------------------
+ ################ 検証コンテキスト: app.role=service（サーバ相当・RLSポリシー許可）################
+(1 row)
+
+ current_role | app_role 
+--------------+----------
+ app_user     | service
+(1 row)
+
+                                      info                                      
+--------------------------------------------------------------------------------
+ --- CHECK5: service で群B shift_optimization_runs へ INSERT（成功する想定）---
+(1 row)
+
+SAVEPOINT
+INSERT 0 1
+              check_name               |               note                
+---------------------------------------+-----------------------------------
+ CHECK5 group-B service INSERT allowed | エラーが出ず INSERT 0 1 なら PASS
+(1 row)
+
+ROLLBACK
+RESET
+RESET
+RESET
+RESET
+ROLLBACK
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DELETE 0
+DO
+                                 info                                  
+-----------------------------------------------------------------------
+ === 検証完了。各 CHECK の result 列 / 直上の ERROR 有無で合否判定 ===
+(1 row)
+
+                                            summary                                            
+-----------------------------------------------------------------------------------------------
+ 期待: CHECK1a=PASS,1b=PASS(0件),1c=PASS,2=ERROR発生,2b=成功,3=ERROR発生,3b=PASS,4=PASS,5=成功
+(1 row)
+
