@@ -35,8 +35,8 @@
   /* sticky bar */
   .topbar{position:sticky;top:0;z-index:60;background:var(--navy);color:#fff;}
   .topbar-in{display:flex;align-items:center;justify-content:space-between;height:58px;}
-  .topbar .logo{font-weight:900;font-size:18px;letter-spacing:.03em;display:flex;align-items:center;gap:8px;}
-  .logo-mark{height:30px;width:30px;object-fit:contain;}
+  .topbar .logo{display:flex;align-items:center;}
+  .logo-full{height:34px;width:auto;object-fit:contain;display:block;}
   .topbar .logo b{color:var(--acc);}
   .topbar a.mini{background:var(--acc);color:#3a2500;font-weight:800;font-size:14px;padding:9px 16px;border-radius:9px;}
 
@@ -111,7 +111,7 @@
 
 <div class="topbar">
   <div class="wrap topbar-in">
-    <div class="logo"><img src="/logo-mark.png" alt="MAMOR-AI" class="logo-mark" />MAMOR<b>-AI</b></div>
+    <a href="/" class="logo"><img src="/logo-full.png" alt="MAMOR-AI" class="logo-full" /></a>
     <a class="mini" href="#contact">無料デモを申込む</a>
   </div>
 </div>
