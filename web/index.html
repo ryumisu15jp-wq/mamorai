@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MAMOR-AI — 警備業のための業務管理プラットフォーム</title>
 <meta name="description" content="日報・配置表・月次報告書の作成からAIシフト最適化まで。警備会社の現場業務を一気通貫で自動化するPCデスクトップ＆Webアプリ。TRYANGROW運営。" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#0b1220" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="MAMOR-AI — 警備業のための業務管理プラットフォーム" />
+<meta property="og:description" content="日報・配置表・月次報告書の作成からAIシフト最適化まで。警備会社の現場業務を一気通貫で自動化。" />
+<meta property="og:image" content="/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="/og-image.png" />
 <style>
   :root{
     --navy:#1f3864;--navy2:#16294a;--ink:#0b1220;--bl:#2563eb;--bll:#dbeafe;
@@ -26,7 +38,8 @@
   /* header */
   header.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);}
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px;}
-  .logo{font-weight:900;letter-spacing:.04em;font-size:20px;color:var(--navy);}
+  .logo{font-weight:900;letter-spacing:.04em;font-size:20px;color:var(--navy);display:flex;align-items:center;gap:9px;}
+  .logo-mark{height:34px;width:34px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(37,99,235,.35));}
   .logo b{color:var(--bl);}
   .nav-links{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:var(--t2);}
   .nav-links a:hover{color:var(--bl);}
@@ -94,7 +107,7 @@
   .flow .step p{font-size:13px;color:var(--t2);}
   @media(max-width:820px){.flow{grid-template-columns:1fr 1fr;}}
 
-  .access{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px;}
+  .access{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:38px;max-width:720px;}
   .access .a{border:1px solid var(--bd);border-radius:14px;padding:24px;}
   .access .a code{font-size:13px;background:var(--bg);padding:2px 8px;border-radius:6px;color:var(--navy);font-weight:700;}
   .access .a h4{margin:12px 0 6px;font-size:16px;}
@@ -121,7 +134,7 @@
 
 <header class="nav">
   <div class="wrap nav-in">
-    <div class="logo">MAMOR<b>-AI</b></div>
+    <div class="logo"><img src="/logo-mark.png" alt="MAMOR-AI" class="logo-mark" />MAMOR<b>-AI</b></div>
     <nav class="nav-links">
       <a href="#features">機能</a>
       <a href="#deliverables">成果物</a>
@@ -246,7 +259,6 @@
     <div class="access">
       <div class="a"><code>/co/</code><h4>会社（本社・権限者）</h4><p>メール＋パスワード（＋任意MFA）。自社の全現場を横断管理。</p><a class="go" href="/co/">会社ログインへ →</a></div>
       <div class="a"><code>/s/</code><h4>施設（現場）</h4><p>会社識別コード＋施設コード＋現場PIN。この現場のみを開く共有端末向け。</p><a class="go" href="/s/">現場ログインへ →</a></div>
-      <div class="a"><code>/tradmin/</code><h4>運営（TRYANGROW）</h4><p>メール＋パスワード＋MFA必須。プラットフォーム全体を管理。</p><a class="go" href="/tradmin/">運営ログインへ →</a></div>
     </div>
   </div>
 </section>
@@ -271,7 +283,7 @@
         <p style="margin-top:12px;max-width:280px;">警備業の現場業務を一気通貫で自動化する業務管理プラットフォーム。</p>
       </div>
       <div><h5>プロダクト</h5><a href="#features">機能</a><a href="#deliverables">成果物</a><a href="#flow">導入の流れ</a><a href="/lp">サービス紹介</a></div>
-      <div><h5>ログイン</h5><a href="/co/">会社ページ</a><a href="/s/">施設（現場）</a><a href="/tradmin/">運営（TRYANGROW）</a></div>
+      <div><h5>ログイン</h5><a href="/co/">会社ページ</a><a href="/s/">施設（現場）</a></div>
       <div><h5>お問い合わせ</h5><a href="/lp#contact">無料デモ</a><a href="/lp#contact">資料請求</a><a href="/lp#faq">よくある質問</a></div>
     </div>
     <div class="foot-bottom">

@@ -19,6 +19,11 @@ mkdir -p "$OUT/app" "$OUT/lp"
 # マーケティング(静的)
 cp "$ROOT/web/index.html" "$OUT/index.html"
 cp "$ROOT/web/lp.html"    "$OUT/lp/index.html"   # cleanUrls: /lp で解決
+# ブランド素材（ファビコン/アプリアイコン/OG/ロゴマーク/manifest）をサイトルートへ
+cp "$ROOT/web/favicon.ico" "$ROOT/web/favicon-16.png" "$ROOT/web/favicon-32.png" \
+   "$ROOT/web/apple-touch-icon.png" "$ROOT/web/icon-192.png" "$ROOT/web/icon-512.png" \
+   "$ROOT/web/icon-maskable-512.png" "$ROOT/web/logo-mark.png" "$ROOT/web/og-image.png" \
+   "$ROOT/web/site.webmanifest" "$OUT/"
 # アプリ本体(SPA) を /app 配下へ
 cp -r "$ROOT/apps/desktop/dist/." "$OUT/app/"
 # vercel設定

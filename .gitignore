@@ -11,7 +11,10 @@ apps/*/src-tauri/target/
 
 # deploy artifacts
 mamorai-deploy.zip
-web/*.png
+# スクショのみ除外（ブランド素材 favicon/icon/logo/og は追跡する）
+web/app_*.png
+web/auth_*.png
+web/web_*.png
 
 # env & secrets
 .env

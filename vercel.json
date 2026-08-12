@@ -6,8 +6,11 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
+    { "source": "/co", "destination": "/app/index.html" },
     { "source": "/co/:path*", "destination": "/app/index.html" },
+    { "source": "/s", "destination": "/app/index.html" },
     { "source": "/s/:path*", "destination": "/app/index.html" },
+    { "source": "/tradmin", "destination": "/app/index.html" },
     { "source": "/tradmin/:path*", "destination": "/app/index.html" }
   ],
   "headers": [
