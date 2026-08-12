@@ -27,6 +27,7 @@ body {
   padding: 20px 14px; display: flex; flex-direction: column; gap: 12px;
 }
 .app-logo { font-weight: 800; font-size: 18px; color: #fff; letter-spacing: .04em; }
+.app-logo-img { display: block; width: 100%; max-width: 184px; height: auto; margin: 2px 0 6px; }
 .nav-item {
   color: #cbd5e1; text-decoration: none; padding: 12px 12px; border-radius: 8px;
   min-height: 44px; display: flex; align-items: center;
@@ -34,7 +35,7 @@ body {
 .nav-item.active { background: var(--bl); color: #fff; }
 .nav-note { margin-top: auto; font-size: 12px; color: #64748b; line-height: 1.5; }
 
-.app-main { flex: 1; padding: 24px; max-width: 900px; }
+.app-main { flex: 1; padding: 24px 32px; max-width: 1680px; }
 
 .qdr-head {
   display: flex; align-items: center; justify-content: space-between;

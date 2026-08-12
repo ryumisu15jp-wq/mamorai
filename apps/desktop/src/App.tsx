@@ -74,7 +74,7 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
   return (
     <div className="app-shell">
       <nav className="app-nav" aria-label="サイドナビ">
-        <div className="app-logo">MAMOR-AI</div>
+        <img src="/logo-full.png" alt="MAMOR-AI" className="app-logo-img" />
         {session && (
           <div className="nav-session">
             <span className="nav-role">{roleLabel[role] ?? role}</span>
