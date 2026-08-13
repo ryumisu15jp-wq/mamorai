@@ -15,6 +15,7 @@ mamorai-deploy.zip
 web/app_*.png
 web/auth_*.png
 web/web_*.png
+web/brand_*.png
 
 # env & secrets
 .env

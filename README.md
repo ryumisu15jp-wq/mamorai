@@ -89,4 +89,3 @@ pnpm --filter @mamorai/server exec vitest run   # 実DB統合テスト
 ```
 
 **実DDL提供後の差替え点（隔離済み）**: `0000_base_assumed.sql` を実25テーブルDDLへ置換 / `app_user_site_ids()` を `auth.uid()` ベースへ / `app_client`・`app_service` を Supabase auth・service_role JWT へ結線 / `DATABASE_URL(_SERVICE)` を実値へ。
-# mamorai

@@ -14,6 +14,12 @@ import { Notifications } from './features/notify/Notifications.js'
 import { Education } from './features/training/Education.js'
 import { TemplateSettings } from './features/template/TemplateSettings.js'
 import { OutputCenter } from './features/output/OutputCenter.js'
+import { LeaveRequest } from './features/leave/LeaveRequest.js'
+import { LeaveApproval } from './features/leave/LeaveApproval.js'
+import { TrainingApply } from './features/training/TrainingApply.js'
+import { TrainingManage } from './features/training/TrainingManage.js'
+import { CompanyManagement } from './features/platform/CompanyManagement.js'
+import { ContractStatus } from './features/platform/ContractStatus.js'
 import { demoConstraints } from './features/shift/demoShift.js'
 import { capabilitiesForRole, type Capability, type ConstraintDef } from '@mamorai/input-core'
 import type { Session } from './features/auth/authTypes.js'
@@ -23,24 +29,21 @@ import type { Session } from './features/auth/authTypes.js'
 // 各画面の集計・ワークフロー・リスク・シフト最適化は @mamorai/input-core に委譲（層分離厳守）。
 
 type Tab =
-  | 'dashboard'
-  | 'sreport'
-  | 'report'
-  | 'output'
-  | 'month'
-  | 'list'
-  | 'risk'
-  | 'shift'
-  | 'assign'
-  | 'constraint'
-  | 'ai'
-  | 'labor'
-  | 'notify'
-  | 'education'
-  | 'template'
+  | 'dashboard' | 'companies' | 'contracts'
+  | 'leaveapprove' | 'trmanage'
+  | 'sreport' | 'report' | 'output' | 'month' | 'list' | 'risk'
+  | 'shift' | 'assign' | 'ai' | 'labor' | 'leave' | 'trapply'
+  | 'constraint' | 'template' | 'education' | 'notify'
 
-// 各タブは capability に紐づく。ログインロールが持つ capability のタブだけ表示する。
+// 各タブは capability に紐づく。ログインロールが持つ capability のタブだけ表示する（コンソール別）。
 const TABS: { key: Tab; label: string; cap: Capability }[] = [
+  // 運営(TRYANGROW)
+  { key: 'companies', label: '会社管理', cap: 'company_management' },
+  { key: 'contracts', label: '契約状況', cap: 'contract_status' },
+  // 会社
+  { key: 'leaveapprove', label: '有給確認', cap: 'leave_approval' },
+  { key: 'trmanage', label: '講習会管理', cap: 'training_manage' },
+  // 現場
   { key: 'dashboard', label: 'ダッシュボード', cap: 'dashboard' },
   { key: 'sreport', label: '日報入力', cap: 'daily_report' },
   { key: 'report', label: '日報入力(簡易)', cap: 'daily_report' },
@@ -50,12 +53,15 @@ const TABS: { key: Tab; label: string; cap: Capability }[] = [
   { key: 'risk', label: 'リスク', cap: 'risk' },
   { key: 'shift', label: 'シフト', cap: 'shift' },
   { key: 'assign', label: '配置表', cap: 'assignment' },
-  { key: 'constraint', label: '制約', cap: 'constraint' },
   { key: 'ai', label: 'AIシフト', cap: 'ai_shift' },
-  { key: 'labor', label: '労務', cap: 'ai_shift' },
-  { key: 'notify', label: '通知', cap: 'notify' },
-  { key: 'education', label: '教育', cap: 'education' },
+  { key: 'labor', label: '労務', cap: 'labor' },
+  { key: 'leave', label: '有給申請', cap: 'leave_request' },
+  { key: 'trapply', label: '講習会', cap: 'training_apply' },
+  // 共通/会社設定
+  { key: 'constraint', label: '労務ルール', cap: 'constraint' },
   { key: 'template', label: 'テンプレ設定', cap: 'template' },
+  { key: 'education', label: '教育', cap: 'education' },
+  { key: 'notify', label: '通知', cap: 'notify' },
 ]
 
 export function App({ session, onLogout }: { session?: Session; onLogout?: () => void } = {}): JSX.Element {
@@ -100,6 +106,10 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         <span className="nav-note">MAMOR-AI / ロール別表示（{tabs.length}機能） / 集計・出力は @mamorai/input-core</span>
       </nav>
       <main className="app-main" id="main">
+        {tab === 'companies' && allow('companies') && <CompanyManagement />}
+        {tab === 'contracts' && allow('contracts') && <ContractStatus />}
+        {tab === 'leaveapprove' && allow('leaveapprove') && <LeaveApproval />}
+        {tab === 'trmanage' && allow('trmanage') && <TrainingManage />}
         {tab === 'dashboard' && allow('dashboard') && <Dashboard onNavigate={setTab} />}
         {tab === 'sreport' && allow('sreport') && <StructuredReport />}
         {tab === 'report' && allow('report') && <QuickDailyReport />}
@@ -109,12 +119,14 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         {tab === 'risk' && allow('risk') && <RiskRanking />}
         {tab === 'shift' && allow('shift') && <ShiftGrid />}
         {tab === 'assign' && allow('assign') && <DailyAssignment />}
-        {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'ai' && allow('ai') && <AiOptimizer constraints={constraints} onChange={setConstraints} />}
         {tab === 'labor' && allow('labor') && <LaborAlerts constraints={constraints} />}
-        {tab === 'notify' && allow('notify') && <Notifications />}
-        {tab === 'education' && allow('education') && <Education />}
+        {tab === 'leave' && allow('leave') && <LeaveRequest />}
+        {tab === 'trapply' && allow('trapply') && <TrainingApply />}
+        {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'template' && allow('template') && <TemplateSettings />}
+        {tab === 'education' && allow('education') && <Education />}
+        {tab === 'notify' && allow('notify') && <Notifications />}
       </main>
     </div>
   )
