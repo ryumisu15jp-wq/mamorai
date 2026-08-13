@@ -16,8 +16,6 @@ export interface Session {
   email?: string
   /** データ可視範囲: 会社全体 / 単一現場 / プラットフォーム全体 */
   scope: 'company' | 'site' | 'platform'
-  /** 複数現場を担当する社員/役員の担当現場一覧（担当外は含めない）。 */
-  assignedSites?: string[]
   label: string
 }
 
