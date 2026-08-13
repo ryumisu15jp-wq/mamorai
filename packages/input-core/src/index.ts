@@ -17,6 +17,7 @@ export * from './shift/model.js'
 export * from './shift/assignment.js'
 export * from './shift/constraints.js'
 export * from './shift/optimize.js'
+export * from './shift/laborAlerts.js'
 export * from './shift/finalize.js'
 export * from './shift/llm.js'
 // Sprint4: 通知 / 教育・資格 / テンプレート設定

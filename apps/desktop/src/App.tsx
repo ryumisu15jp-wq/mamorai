@@ -9,6 +9,7 @@ import { ShiftGrid } from './features/shift/ShiftGrid.js'
 import { DailyAssignment } from './features/shift/DailyAssignment.js'
 import { ConstraintEditor } from './features/shift/ConstraintEditor.js'
 import { AiOptimizer } from './features/shift/AiOptimizer.js'
+import { LaborAlerts } from './features/shift/LaborAlerts.js'
 import { Notifications } from './features/notify/Notifications.js'
 import { Education } from './features/training/Education.js'
 import { TemplateSettings } from './features/template/TemplateSettings.js'
@@ -33,6 +34,7 @@ type Tab =
   | 'assign'
   | 'constraint'
   | 'ai'
+  | 'labor'
   | 'notify'
   | 'education'
   | 'template'
@@ -50,6 +52,7 @@ const TABS: { key: Tab; label: string; cap: Capability }[] = [
   { key: 'assign', label: '配置表', cap: 'assignment' },
   { key: 'constraint', label: '制約', cap: 'constraint' },
   { key: 'ai', label: 'AIシフト', cap: 'ai_shift' },
+  { key: 'labor', label: '労務', cap: 'ai_shift' },
   { key: 'notify', label: '通知', cap: 'notify' },
   { key: 'education', label: '教育', cap: 'education' },
   { key: 'template', label: 'テンプレ設定', cap: 'template' },
@@ -108,6 +111,7 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         {tab === 'assign' && allow('assign') && <DailyAssignment />}
         {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'ai' && allow('ai') && <AiOptimizer constraints={constraints} onChange={setConstraints} />}
+        {tab === 'labor' && allow('labor') && <LaborAlerts constraints={constraints} />}
         {tab === 'notify' && allow('notify') && <Notifications />}
         {tab === 'education' && allow('education') && <Education />}
         {tab === 'template' && allow('template') && <TemplateSettings />}

@@ -436,3 +436,18 @@ body {
 .doc-meta td{padding:8px 14px;border:1px solid var(--bd);font-size:14px;}
 .doc-block{margin-top:16px;}
 .doc-caption{font-size:14px;color:var(--t1);margin-bottom:8px;border-left:4px solid var(--bl);padding-left:8px;}
+
+/* [労務] 労務アラート コンソール */
+.la-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+.la-tile{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:18px 20px;text-align:center;}
+.la-tile .la-n{font-size:30px;font-weight:900;color:var(--navy);}
+.la-tile .la-l{font-size:12px;color:var(--t3);margin-top:2px;}
+.la-tile.la-bad{background:#fef2f2;border-color:#fecaca;} .la-tile.la-bad .la-n{color:var(--r);}
+.la-tile.la-warn{background:#fffbeb;border-color:#fde68a;} .la-tile.la-warn .la-n{color:var(--am);}
+.la-tile.la-ok .la-n{color:var(--g);}
+.la-cats{display:flex;flex-wrap:wrap;gap:8px;}
+.la-cat{font-size:13px;color:var(--t3);background:var(--bg);border:1px solid var(--bd);border-radius:999px;padding:6px 12px;}
+.la-cat.on{color:var(--navy);border-color:#c7d6f0;background:var(--bll);}
+.la-cat b{color:var(--t1);margin-left:4px;}
+.status.st-reject{background:#fef2f2;color:var(--r);border:1px solid #fecaca;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;}
+.status.st-warn{background:#fffbeb;color:var(--am);border:1px solid #fde68a;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;}
