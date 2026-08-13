@@ -25,6 +25,7 @@ export type Capability =
   | 'labor'              // 労務アラート(法令リスク)
   | 'notify'             // 通知 / 情報提供
   | 'education'          // 教育・資格
+  | 'edu_docs'           // 教育指導6点セット（計画/実施簿/是正/個別/改善/台帳）
   | 'constraint'         // 労務情報・ルール(制約)の追加/調整
   | 'template'           // テンプレ設定
   | 'leave_request'      // 有給申請（現場→会社）
@@ -33,22 +34,25 @@ export type Capability =
   | 'training_manage'    // 講習会の登録/カレンダー/案内（会社）
   | 'company_management' // 会社管理（運営）
   | 'contract_status'    // 契約状況（運営）
+  | 'ops_dashboard'      // 運営ダッシュボード（運営）
+  | 'security_check'     // セキュリティチェック（運営）
+  | 'platform_notice'    // お知らせ配信 バージョン/セキュリティ/メンテ（運営）
   | 'platform_admin'     // 運営コンソール(アプリ/運営管理)
 
 // ── コンソール別 機能セット ──
 /** 現場(施設): 運用ほぼ全て＋有給申請・講習会参加申込 */
 const SITE: Capability[] = [
   'dashboard', 'daily_report', 'monthly', 'report_list', 'output',
-  'shift', 'assignment', 'ai_shift', 'labor', 'risk', 'notify', 'education',
+  'shift', 'assignment', 'ai_shift', 'labor', 'risk', 'notify', 'education', 'edu_docs',
   'leave_request', 'training_apply',
 ]
 /** 会社: 管理・設定・確認（日報入力やシフト作成は現場が実施） */
 const COMPANY: Capability[] = [
-  'leave_approval', 'training_manage', 'education', 'constraint', 'template', 'notify',
+  'leave_approval', 'training_manage', 'education', 'edu_docs', 'constraint', 'template', 'notify',
 ]
-/** 運営(TRYANGROW): 会社管理・契約・アプリ/運営管理のみ */
+/** 運営(TRYANGROW): 運営ダッシュボード・会社管理・契約・セキュリティチェック・お知らせ配信のみ（現場業務は持たない） */
 const PLATFORM: Capability[] = [
-  'company_management', 'contract_status', 'notify', 'platform_admin',
+  'ops_dashboard', 'company_management', 'contract_status', 'security_check', 'platform_notice', 'platform_admin',
 ]
 
 /** ロールが利用できる capability の一覧（コンソールごとに独立）。 */
