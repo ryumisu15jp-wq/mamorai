@@ -10,6 +10,7 @@ import { toEpochDay } from './constraints.js'
 export const DEFAULT_SHIFT_TIMES: Record<string, ShiftTime> = {
   日勤: { start: '09:00', end: '18:00' },
   夜勤: { start: '21:00', end: '09:00', crossesMidnight: true },
+  当務: { start: '08:00', end: '09:00', crossesMidnight: true }, // 25h勤務(いわゆる当務)
   研修: { start: '09:00', end: '17:00' },
 }
 

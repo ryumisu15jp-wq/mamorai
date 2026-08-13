@@ -10,6 +10,8 @@ const CAT_LABEL: Record<string, string> = {
 const KIND_LABEL: Record<string, string> = {
   max_consecutive_days: '連勤上限', min_rest_hours: '勤務間隔', max_weekly_hours: '週労働上限',
   insurance_weekly_hours: '社保加入目安',
+  rest_day_after_long_shift: '当務後の休息', no_work_after_night: '夜勤後の休息',
+  min_days_off_per_week: '週休配慮',
 }
 
 export function LaborAlerts({ constraints }: { constraints?: ConstraintDef[] } = {}): JSX.Element {

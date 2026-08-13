@@ -31,7 +31,7 @@ export const demoStaff: Staff[] = [
 ]
 
 /** 勤務区分の選択肢（既知＋現場独自も文字列で追加可能）。 */
-export const WORK_TYPES: WorkType[] = ['日勤', '夜勤', '明休', '公休', '研修', '有給', '欠勤']
+export const WORK_TYPES: WorkType[] = ['日勤', '夜勤', '当務', '明休', '公休', '研修', '有給', '欠勤']
 
 /** 現場ポジションの必要要件（配置表・必要人数制約の土台）。 */
 export const demoPositions: PositionRequirement[] = [
@@ -44,9 +44,11 @@ export function demoBaseCells(): ShiftCell[] {
   const cells: ShiftCell[] = []
   const plan: Record<string, WorkType[]> = {
     'user-1': ['日勤', '日勤', '夜勤', '明休', '公休', '日勤', '日勤'],
-    'user-2': ['夜勤', '明休', '日勤', '日勤', '日勤', '公休', '夜勤'],
+    // 夜勤(06)→日勤(07): ルール②「夜勤後は休み」に抵触する例
+    'user-2': ['夜勤', '明休', '日勤', '日勤', '日勤', '夜勤', '日勤'],
     'user-3': ['公休', '日勤', '日勤', '夜勤', '明休', '日勤', '公休'],
-    'user-4': ['日勤', '日勤', '公休', '日勤', '夜勤', '明休', '日勤'],
+    // 当務(04)→日勤(05): ルール①「当務後は1日空ける」に抵触する例
+    'user-4': ['日勤', '日勤', '公休', '当務', '日勤', '夜勤', '明休'],
   }
   for (const s of demoStaff) {
     const row = plan[s.id] ?? []
@@ -99,6 +101,27 @@ export function demoConstraints(): ConstraintDef[] {
       id: 'c-other-forbid', category: 'other', severity: 'hard', kind: 'custom_flag',
       params: { rule: 'forbid_staff_position', staffId: 'user-4', position: '夜勤' },
       label: '田中は夜勤に入れない（本人事情）', source: 'その他配慮', active: false,
+    },
+    // ── 会社ルール（人事総務部・シフト作成ルール）。会社ごとに追加/調整できる ──
+    {
+      id: 'c-hr-touban-rest', category: 'company', severity: 'hard', kind: 'rest_day_after_long_shift',
+      params: { minHours: 22, restDays: 1 },
+      label: '当務(22〜25h)の後は1日空ける', source: '人事総務部 シフト作成ルール①', active: true,
+    },
+    {
+      id: 'c-hr-after-night', category: 'company', severity: 'hard', kind: 'no_work_after_night',
+      params: { nightTypes: ['夜勤'] },
+      label: '夜勤の後は連続勤務しない（翌日は休み）', source: '人事総務部 シフト作成ルール②', active: true,
+    },
+    {
+      id: 'c-hr-weekoff', category: 'company', severity: 'soft', kind: 'min_days_off_per_week',
+      params: { days: 1 }, weight: 4,
+      label: '勤務過密を避け休日配置に配慮', source: '人事総務部 シフト作成ルール③', active: true,
+    },
+    {
+      id: 'c-hr-interval9', category: 'company', severity: 'hard', kind: 'min_rest_hours',
+      params: { hours: 9 },
+      label: '退勤〜翌始業まで9時間以上のインターバル', source: '人事総務部 シフト作成ルール④', active: true,
     },
   ]
 }
