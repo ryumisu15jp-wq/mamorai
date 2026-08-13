@@ -3,18 +3,27 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/co", "destination": "/app/index.html" },
-    { "source": "/co/:path*", "destination": "/app/index.html" },
-    { "source": "/s", "destination": "/app/index.html" },
-    { "source": "/s/:path*", "destination": "/app/index.html" },
-    { "source": "/tradmin", "destination": "/app/index.html" },
-    { "source": "/tradmin/:path*", "destination": "/app/index.html" },
+    { "source": "/co", "destination": "/console/index.html" },
+    { "source": "/co/:path*", "destination": "/console/index.html" },
+    { "source": "/s", "destination": "/console/index.html" },
+    { "source": "/s/:path*", "destination": "/console/index.html" },
+    { "source": "/tradmin", "destination": "/console/index.html" },
+    { "source": "/tradmin/:path*", "destination": "/console/index.html" },
+    { "source": "/app/:path*", "destination": "/app/index.html" },
     { "source": "/lp", "destination": "/lp/index.html" }
   ],
   "headers": [
     {
+      "source": "/console/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
       "source": "/app/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/app/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]
 }

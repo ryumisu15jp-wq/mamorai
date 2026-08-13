@@ -28,3 +28,12 @@ web/brand_*.png
 
 # vitest / coverage
 coverage/
+
+# dev screenshots
+web/shift_*.png
+web/ops_*.png
+web/console_*.png
+web/verify_*.png
+web/aishift.png
+web/labor.png
+web/app_output_center.png

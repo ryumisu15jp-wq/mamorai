@@ -1,0 +1,18 @@
+{
+  "name": "MAMOR-AI 勤務員アプリ",
+  "short_name": "MAMOR-AI",
+  "description": "警備勤務員向け — シフト希望・有給申請・講習会申込・お知らせ",
+  "id": "/app/",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1c34",
+  "theme_color": "#0f1c34",
+  "lang": "ja",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

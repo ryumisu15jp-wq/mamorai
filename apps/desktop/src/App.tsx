@@ -5,15 +5,25 @@ import { StructuredReport } from './features/report/StructuredReport.js'
 import { MonthlyReport } from './features/month/MonthlyReport.js'
 import { ReportList } from './features/report/ReportList.js'
 import { RiskRanking } from './features/risk/RiskRanking.js'
-import { ShiftGrid } from './features/shift/ShiftGrid.js'
+import { ShiftMonth } from './features/shift/ShiftMonth.js'
 import { DailyAssignment } from './features/shift/DailyAssignment.js'
 import { ConstraintEditor } from './features/shift/ConstraintEditor.js'
 import { AiOptimizer } from './features/shift/AiOptimizer.js'
 import { LaborAlerts } from './features/shift/LaborAlerts.js'
 import { Notifications } from './features/notify/Notifications.js'
 import { Education } from './features/training/Education.js'
+import { EducationForms } from './features/training/EducationForms.js'
 import { TemplateSettings } from './features/template/TemplateSettings.js'
 import { OutputCenter } from './features/output/OutputCenter.js'
+import { LeaveRequest } from './features/leave/LeaveRequest.js'
+import { LeaveApproval } from './features/leave/LeaveApproval.js'
+import { TrainingApply } from './features/training/TrainingApply.js'
+import { TrainingManage } from './features/training/TrainingManage.js'
+import { CompanyManagement } from './features/platform/CompanyManagement.js'
+import { ContractStatus } from './features/platform/ContractStatus.js'
+import { OpsDashboard } from './features/platform/OpsDashboard.js'
+import { SecurityCheck } from './features/platform/SecurityCheck.js'
+import { PlatformNotice } from './features/platform/PlatformNotice.js'
 import { demoConstraints } from './features/shift/demoShift.js'
 import { capabilitiesForRole, type Capability, type ConstraintDef } from '@mamorai/input-core'
 import type { Session } from './features/auth/authTypes.js'
@@ -23,24 +33,25 @@ import type { Session } from './features/auth/authTypes.js'
 // 各画面の集計・ワークフロー・リスク・シフト最適化は @mamorai/input-core に委譲（層分離厳守）。
 
 type Tab =
+  | 'opsdash' | 'companies' | 'contracts' | 'seccheck' | 'platnotice'
   | 'dashboard'
-  | 'sreport'
-  | 'report'
-  | 'output'
-  | 'month'
-  | 'list'
-  | 'risk'
-  | 'shift'
-  | 'assign'
-  | 'constraint'
-  | 'ai'
-  | 'labor'
-  | 'notify'
-  | 'education'
-  | 'template'
+  | 'leaveapprove' | 'trmanage'
+  | 'sreport' | 'report' | 'output' | 'month' | 'list' | 'risk'
+  | 'shift' | 'assign' | 'ai' | 'labor' | 'leave' | 'trapply'
+  | 'constraint' | 'template' | 'education' | 'edudocs' | 'notify'
 
-// 各タブは capability に紐づく。ログインロールが持つ capability のタブだけ表示する。
+// 各タブは capability に紐づく。ログインロールが持つ capability のタブだけ表示する（コンソール別）。
 const TABS: { key: Tab; label: string; cap: Capability }[] = [
+  // 運営(TRYANGROW)
+  { key: 'opsdash', label: 'ダッシュボード', cap: 'ops_dashboard' },
+  { key: 'companies', label: '会社管理', cap: 'company_management' },
+  { key: 'contracts', label: '契約状況', cap: 'contract_status' },
+  { key: 'seccheck', label: 'セキュリティチェック', cap: 'security_check' },
+  { key: 'platnotice', label: 'お知らせ', cap: 'platform_notice' },
+  // 会社
+  { key: 'leaveapprove', label: '有給確認', cap: 'leave_approval' },
+  { key: 'trmanage', label: '講習会管理', cap: 'training_manage' },
+  // 現場
   { key: 'dashboard', label: 'ダッシュボード', cap: 'dashboard' },
   { key: 'sreport', label: '日報入力', cap: 'daily_report' },
   { key: 'report', label: '日報入力(簡易)', cap: 'daily_report' },
@@ -50,12 +61,16 @@ const TABS: { key: Tab; label: string; cap: Capability }[] = [
   { key: 'risk', label: 'リスク', cap: 'risk' },
   { key: 'shift', label: 'シフト', cap: 'shift' },
   { key: 'assign', label: '配置表', cap: 'assignment' },
-  { key: 'constraint', label: '制約', cap: 'constraint' },
   { key: 'ai', label: 'AIシフト', cap: 'ai_shift' },
-  { key: 'labor', label: '労務', cap: 'ai_shift' },
-  { key: 'notify', label: '通知', cap: 'notify' },
-  { key: 'education', label: '教育', cap: 'education' },
+  { key: 'labor', label: '労務', cap: 'labor' },
+  { key: 'leave', label: '有給申請', cap: 'leave_request' },
+  { key: 'trapply', label: '講習会', cap: 'training_apply' },
+  // 共通/会社設定
+  { key: 'constraint', label: '労務ルール', cap: 'constraint' },
   { key: 'template', label: 'テンプレ設定', cap: 'template' },
+  { key: 'edudocs', label: '教育指導簿', cap: 'edu_docs' },
+  { key: 'education', label: '教育', cap: 'education' },
+  { key: 'notify', label: '通知', cap: 'notify' },
 ]
 
 export function App({ session, onLogout }: { session?: Session; onLogout?: () => void } = {}): JSX.Element {
@@ -65,6 +80,9 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
   const tabs = useMemo(() => TABS.filter((t) => caps.has(t.cap)), [caps])
 
   const [tab, setTab] = useState<Tab>(() => tabs[0]?.key ?? 'sreport')
+  // 複数現場を担当する社員/役員向け: ログイン後に担当現場を切替（担当外は表示しない）。
+  const assignedSites = session?.assignedSites ?? (role === 'site_operator' ? ['ブルガリホテル東京', '立川立飛', 'ららテラス立川'] : [])
+  const [currentSite, setCurrentSite] = useState<string>(() => assignedSites[0] ?? '')
   // 制約は「制約」タブと「AIシフト」タブで共有する（NL構造化→エディタ反映を体現）。
   const [constraints, setConstraints] = useState<ConstraintDef[]>(() => demoConstraints())
 
@@ -81,6 +99,11 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         {session && (
           <div className="nav-session">
             <span className="nav-role">{roleLabel[role] ?? role}</span>
+            {assignedSites.length > 1 && (
+              <select className="nav-siteswitch" aria-label="担当現場を切替" value={currentSite} onChange={(e) => setCurrentSite(e.target.value)}>
+                {assignedSites.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
             {session.siteCode && <span className="nav-scope">現場 {session.siteCode}</span>}
             {session.email && <span className="nav-scope">{session.email}</span>}
             {onLogout && <button type="button" className="nav-logout" onClick={onLogout}>ログアウト</button>}
@@ -100,6 +123,13 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         <span className="nav-note">MAMOR-AI / ロール別表示（{tabs.length}機能） / 集計・出力は @mamorai/input-core</span>
       </nav>
       <main className="app-main" id="main">
+        {tab === 'opsdash' && allow('opsdash') && <OpsDashboard />}
+        {tab === 'companies' && allow('companies') && <CompanyManagement />}
+        {tab === 'contracts' && allow('contracts') && <ContractStatus />}
+        {tab === 'seccheck' && allow('seccheck') && <SecurityCheck />}
+        {tab === 'platnotice' && allow('platnotice') && <PlatformNotice />}
+        {tab === 'leaveapprove' && allow('leaveapprove') && <LeaveApproval />}
+        {tab === 'trmanage' && allow('trmanage') && <TrainingManage />}
         {tab === 'dashboard' && allow('dashboard') && <Dashboard onNavigate={setTab} />}
         {tab === 'sreport' && allow('sreport') && <StructuredReport />}
         {tab === 'report' && allow('report') && <QuickDailyReport />}
@@ -107,14 +137,17 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         {tab === 'month' && allow('month') && <MonthlyReport />}
         {tab === 'list' && allow('list') && <ReportList />}
         {tab === 'risk' && allow('risk') && <RiskRanking />}
-        {tab === 'shift' && allow('shift') && <ShiftGrid />}
+        {tab === 'shift' && allow('shift') && <ShiftMonth />}
         {tab === 'assign' && allow('assign') && <DailyAssignment />}
-        {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'ai' && allow('ai') && <AiOptimizer constraints={constraints} onChange={setConstraints} />}
         {tab === 'labor' && allow('labor') && <LaborAlerts constraints={constraints} />}
-        {tab === 'notify' && allow('notify') && <Notifications />}
-        {tab === 'education' && allow('education') && <Education />}
+        {tab === 'leave' && allow('leave') && <LeaveRequest />}
+        {tab === 'trapply' && allow('trapply') && <TrainingApply />}
+        {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'template' && allow('template') && <TemplateSettings />}
+        {tab === 'edudocs' && allow('edudocs') && <EducationForms />}
+        {tab === 'education' && allow('education') && <Education />}
+        {tab === 'notify' && allow('notify') && <Notifications />}
       </main>
     </div>
   )

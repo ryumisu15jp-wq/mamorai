@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>MAMOR-AI 導入提案書</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root{
+    --navy:#1f3864;--navy2:#16294a;--ink:#0b1220;--bl:#2563eb;--bll:#dbeafe;
+    --g:#16a34a;--am:#d97706;--r:#dc2626;--t1:#0f172a;--t2:#334155;--t3:#64748b;--bd:#e2e8f0;--bg:#f6f8fc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Sans','Yu Gothic',Meiryo,system-ui,sans-serif;color:var(--t1);line-height:1.65;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page{width:210mm;min-height:297mm;padding:18mm 16mm;position:relative;page-break-after:always;background:#fff;}
+  .page:last-child{page-break-after:auto;}
+  h2.sec{font-size:20px;color:var(--navy);font-weight:900;border-left:6px solid var(--bl);padding-left:12px;margin-bottom:14px;}
+  h3{font-size:15px;color:var(--navy);font-weight:800;margin:14px 0 6px;}
+  p{font-size:12.5px;color:var(--t2);}
+  .eyebrow{font-size:11px;font-weight:800;color:var(--bl);letter-spacing:.1em;text-transform:uppercase;}
+  .muted{color:var(--t3);font-size:11px;}
+  /* 表紙 */
+  .cover{background:radial-gradient(900px 500px at 80% -10%,#2c4c82,var(--navy) 45%,var(--navy2));color:#fff;display:flex;flex-direction:column;justify-content:center;}
+  .cover .mark{width:88px;height:88px;margin-bottom:24px;}
+  .cover .kick{display:inline-block;font-size:12px;font-weight:800;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:999px;letter-spacing:.08em;}
+  .cover h1{font-size:40px;font-weight:900;margin:22px 0 8px;letter-spacing:.02em;}
+  .cover .sub{font-size:16px;color:#d7e3f7;max-width:150mm;}
+  .cover .foot{position:absolute;bottom:18mm;left:16mm;right:16mm;font-size:12px;color:#a9bfe0;border-top:1px solid rgba(255,255,255,.2);padding-top:12px;display:flex;justify-content:space-between;}
+  /* 部品 */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .card{border:1px solid var(--bd);border-radius:10px;padding:14px;background:#fff;}
+  .card.bl{background:var(--bg);}
+  .card h4{font-size:13.5px;color:var(--t1);font-weight:800;margin-bottom:5px;}
+  .card p{font-size:11.5px;}
+  .ic{width:34px;height:34px;border-radius:9px;background:var(--bll);color:var(--bl);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;}
+  th,td{border:1px solid var(--bd);padding:7px 9px;text-align:left;vertical-align:top;}
+  th{background:var(--navy);color:#fff;font-weight:700;font-size:11px;}
+  tr:nth-child(even) td{background:var(--bg);}
+  .pill{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--bll);color:var(--bl);}
+  .ok{color:var(--g);font-weight:800;} .no{color:var(--am);font-weight:800;}
+  .head{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .head img{height:26px;}
+  .head .hn{font-size:11px;color:var(--t3);margin-left:auto;}
+  ul.clean{list-style:none;}
+  ul.clean li{font-size:12px;color:var(--t2);padding:4px 0 4px 18px;position:relative;}
+  ul.clean li:before{content:"▶";color:var(--bl);position:absolute;left:0;font-size:9px;top:6px;}
+  .flow{display:flex;gap:6px;align-items:stretch;margin-top:8px;}
+  .flow .st{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center;font-size:11px;}
+  .flow .st b{display:block;color:var(--navy);font-size:12px;margin-bottom:2px;}
+  .flow .ar{display:flex;align-items:center;color:var(--bl);font-weight:900;}
+</style>
+</head>
+<body>
+
+<!-- 表紙 -->
+<section class="page cover">
+  <img class="mark" src="logo-mark.png" alt="" />
+  <span class="kick">警備業のための業務管理プラットフォーム</span>
+  <h1>MAMOR-AI 導入提案書</h1>
+  <p class="sub">日報・シフト・報告書の「手作業」を、AIで一気通貫に。現場の入力から法令リスク管理・AIシフト・成果物出力までを1つに。</p>
+  <div class="foot"><span>運営：TRYANGROW</span><span>mamorai.tryangrow.com</span></div>
+</section>
+
+<!-- 課題 -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Challenge</span>
+  <h2 class="sec">警備会社の現場が抱える課題</h2>
+  <p>多くの警備会社では、日報・シフト・報告書の作成が Excel と手作業に依存し、時間と属人化、そして法令遵守のリスクが積み上がっています。</p>
+  <div class="grid2" style="margin-top:14px;">
+    <div class="card"><div class="ic">📄</div><h4>日報・報告書が手作業</h4><p>現場ごとに様式が異なり、転記・集計に時間。月次のデータ項目×件数は手で数えている。</p></div>
+    <div class="card"><div class="ic">🗓️</div><h4>シフト作成が属人化</h4><p>労基・資格・希望休を頭の中で調整。担当者が休むと止まり、作り直しに数時間。</p></div>
+    <div class="card"><div class="ic">⚖️</div><h4>法令遵守リスク</h4><p>連勤・勤務間隔・週労働・当務/夜勤後の休息など、見落としが労務リスクに直結。</p></div>
+    <div class="card"><div class="ic">🔀</div><h4>情報が分散</h4><p>有給申請・教育記録・講習会・通知が紙やメールに散在し、確認と管理が煩雑。</p></div>
+  </div>
+  <h3>MAMOR-AI の狙い</h3>
+  <p>「1つの構造化入力 → 集計・法令点検・AIシフト・成果物出力」までを一気通貫に。現場は入力に集中し、管理はセキュアに。<b>“見る”だけでなく“作る”まで</b>自動化します。</p>
+</section>
+
+<!-- ソリューション概要 + 3コンソール -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Solution</span>
+  <h2 class="sec">ソリューション概要 ― 3つのコンソール</h2>
+  <p>役割ごとに最適化した3つのコンソールを、単一のプラットフォームで提供します。担当外の情報は表示しない権限設計（RLS）です。</p>
+  <div class="flow">
+    <div class="st"><b>入力</b>日報・シフト希望・有給・講習申込</div><div class="ar">→</div>
+    <div class="st"><b>点検</b>データ集計・労務アラート（法令）</div><div class="ar">→</div>
+    <div class="st"><b>作成</b>AIシフト・配置表・月次報告書</div><div class="ar">→</div>
+    <div class="st"><b>共有</b>出力(PDF/Excel)・通知・承認</div>
+  </div>
+  <div class="grid3" style="margin-top:16px;">
+    <div class="card bl"><h4>🏢 運営（TRYANGROW）</h4><p>会社管理・契約状況・運営ダッシュボード・セキュリティチェック・お知らせ配信（バージョン/セキュリティ/メンテ）。</p></div>
+    <div class="card bl"><h4>🏬 会社（本社・権限者）</h4><p>労務ルール設定・有給承認・教育指導管理・講習会の登録/予約・通知・部署単位の管理。</p></div>
+    <div class="card bl"><h4>👷 現場（施設）</h4><p>日報・月報・月次シフト・配置表・労務・有給申請・講習会申込・教育指導簿・通知。</p></div>
+  </div>
+</section>
+
+<!-- 主要機能 1 -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Features 1/2</span>
+  <h2 class="sec">主要機能 ― 現場の入力から成果物まで</h2>
+  <div class="grid2">
+    <div class="card"><div class="ic">✎</div><h4>かんたん日報入力・自動集計</h4><p>対応時間・対応者・対応内容・事案内容を素早く記録。種別から「データ項目×件数」を自動集計し、月次報告書へ連動。現場ごとにセクション（巡回/点検/特記等）を設定で追加可能。</p></div>
+    <div class="card"><div class="ic">🗓️</div><h4>月次シフト表（掲示様式）</h4><p>氏名×1〜31日のグリッドで、勤務区分（責/日勤/夜勤/当務/明/休 等）を色分け表示。曜日・体制（出勤数）を自動集計。セルクリックで登録。</p></div>
+    <div class="card"><div class="ic">AI</div><h4>AIシフト最適化（HITL）</h4><p>労基・資格・希望休・会社ルールを満たす配置の下案を提示。最終確定は管制員の確認を経る（Human-in-the-Loop）。評価不能な必須条件は安全側に倒す。</p></div>
+    <div class="card"><div class="ic">⤴</div><h4>成果物の自動生成</h4><p>配置予定表・配置表・月次報告書を現場様式のPDFで自動生成。既存Excelへの書き戻し（値のみ差込）にも対応。定義データを足すだけで新様式に対応。</p></div>
+  </div>
+</section>
+
+<!-- 主要機能 2 : 労務 -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Features 2/2</span>
+  <h2 class="sec">主要機能 ― 法令リスク管理・労務・人事</h2>
+  <div class="grid2">
+    <div class="card"><div class="ic">⚖</div><h4>労務アラート（法令リスク管理）</h4><p>シフト表を自動点検し、連勤上限・勤務間隔・週労働・社保加入目安をカテゴリ別（法令/保険/会社）に検出。違反/注意を一覧化。</p></div>
+    <div class="card"><div class="ic">＋</div><h4>拡張制約フレームワーク</h4><p>国(労基)・保険・会社規程・その他の条件を、ハード/ソフト指定で後から追加可能。会社ごとに“行を足すだけ”でルールを増やせる。</p></div>
+    <div class="card"><div class="ic">🏖</div><h4>有給申請・承認</h4><p>現場から有給を申請、現場/会社で承認。承認後は有給申請書PDFを出力（会社は部署単位で確認）。</p></div>
+    <div class="card"><div class="ic">🎓</div><h4>教育指導・講習会</h4><p>教育指導6点セット（計画書・実施簿・是正指示書・個別指導・改善確認・管理台帳）の作成/管理。法定研修（新任/現任）の登録・予約・受付。</p></div>
+  </div>
+  <h3>会社ルール（人事総務部）を制約として設定・点検</h3>
+  <table>
+    <tr><th style="width:44px;">#</th><th>シフト作成ルール</th><th style="width:70px;">種別</th></tr>
+    <tr><td>①</td><td>当務(22〜25h)の後は連続シフトを入れず、次の勤務まで最低1日空ける</td><td>ハード</td></tr>
+    <tr><td>②</td><td>夜勤の後に連続して勤務しない（翌日は休み）</td><td>ハード</td></tr>
+    <tr><td>③</td><td>勤務が過密にならないよう休日配置に配慮</td><td>ソフト</td></tr>
+    <tr><td>④</td><td>退勤〜翌始業まで9時間以上のインターバルを確保</td><td>ハード</td></tr>
+  </table>
+</section>
+
+<!-- セキュリティ・提供形態 -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Security & Delivery</span>
+  <h2 class="sec">セキュリティ・認証・提供形態</h2>
+  <div class="grid2">
+    <div class="card"><h4>3系統ログインと権限分離</h4>
+      <ul class="clean">
+        <li>会社（本社・権限者）：メール＋パスワード（＋MFA）</li>
+        <li>施設（現場）：会社識別コード＋施設コード＋現場PIN</li>
+        <li>運営（TRYANGROW）：メール＋パスワード＋MFA必須</li>
+      </ul>
+    </div>
+    <div class="card"><h4>データ保護</h4>
+      <ul class="clean">
+        <li>テナント分離（RLS）で担当外データは0件</li>
+        <li>APIキー・サービスロールはサーバ限定（フロント非露出）</li>
+        <li>全ドメインTLS・運営MFA・脆弱性スキャン</li>
+      </ul>
+    </div>
+  </div>
+  <h3>提供形態（デュアル配布）</h3>
+  <div class="grid2">
+    <div class="card bl"><h4>💻 PCデスクトップ（.exe）</h4><p>Tauri v2 でラップしたPC専用アプリ。現場・事務所のPCに配布。</p></div>
+    <div class="card bl"><h4>🌐 Web版</h4><p>同一コードをブラウザで提供。独自ドメイン運用（例：mamorai.tryangrow.com）。</p></div>
+  </div>
+  <h3>導入の流れ</h3>
+  <div class="flow">
+    <div class="st"><b>1</b>現場・様式登録</div><div class="ar">→</div>
+    <div class="st"><b>2</b>会社ルール設定</div><div class="ar">→</div>
+    <div class="st"><b>3</b>現場で運用開始</div><div class="ar">→</div>
+    <div class="st"><b>4</b>成果物自動生成</div>
+  </div>
+</section>
+
+<!-- 差別化・効果・CTA -->
+<section class="page">
+  <div class="head"><img src="logo-full.png" alt="MAMOR-AI" /><span class="hn">導入提案書</span></div>
+  <span class="eyebrow">Why MAMOR-AI</span>
+  <h2 class="sec">導入効果と、他にない強み</h2>
+  <table>
+    <tr><th>項目</th><th>従来（Excel＋手作業）</th><th>MAMOR-AI</th></tr>
+    <tr><td>日報の集計</td><td class="no">手で数える</td><td class="ok">自動集計・月次連動</td></tr>
+    <tr><td>現場ごとの様式</td><td class="no">個別に作り直し</td><td class="ok">設定データで吸収</td></tr>
+    <tr><td>シフト作成</td><td class="no">属人的・数時間</td><td class="ok">AIが制約充足の下案</td></tr>
+    <tr><td>法令リスク</td><td class="no">目視・見落とし</td><td class="ok">自動点検・アラート</td></tr>
+    <tr><td>報告書出力</td><td class="no">毎回組み直し</td><td class="ok">PDF/Excelを自動生成</td></tr>
+    <tr><td>有給・教育・講習</td><td class="no">紙・メール分散</td><td class="ok">申請〜承認〜記録を一元</td></tr>
+    <tr><td>提供形態</td><td class="no">個々のPC任せ</td><td class="ok">.exe＋Web・テナント分離</td></tr>
+  </table>
+  <div class="grid3" style="margin-top:16px;">
+    <div class="card"><h4>⏱ 残業削減</h4><p>報告書づくりの手作業をなくし、現場・管制の時間を取り戻す。</p></div>
+    <div class="card"><h4>👥 属人化の解消</h4><p>シフト・配置の判断を仕組みに。担当が休んでも止まらない。</p></div>
+    <div class="card"><h4>🛡 法令遵守</h4><p>労基・会社ルールを自動点検し、リスクを未然に。</p></div>
+  </div>
+  <div class="card bl" style="margin-top:18px;text-align:center;">
+    <h3 style="margin:0 0 4px;">まずは、御社の日報様式でデモを。</h3>
+    <p>実際の様式に合わせた無料デモをご用意します。導入のご相談・お見積りもお気軽に。</p>
+    <p class="muted" style="margin-top:6px;">運営：TRYANGROW ／ mamorai.tryangrow.com ／ お問い合わせ：info@tryangrow.com</p>
+  </div>
+</section>
+
+</body>
+</html>

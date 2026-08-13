@@ -451,3 +451,35 @@ body {
 .la-cat b{color:var(--t1);margin-left:4px;}
 .status.st-reject{background:#fef2f2;color:var(--r);border:1px solid #fecaca;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;}
 .status.st-warn{background:#fffbeb;color:var(--am);border:1px solid #fde68a;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;}
+
+/* [シフト月次] BHT様式の月間シフト表 */
+.sc-legend{flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center;}
+.sc-chip{display:inline-flex;align-items:center;gap:4px;font-weight:800;font-size:13px;padding:3px 8px;border-radius:6px;border:1px solid var(--bd);}
+.sc-chip i{font-style:normal;font-weight:600;font-size:11px;color:var(--t3);}
+.sc-resp{background:#fee2e2;color:#b91c1c;} .sc-day{background:#dbeafe;color:#1d4ed8;}
+.sc-night{background:#e0e7ff;color:#4338ca;} .sc-touban{background:#fef3c7;color:#b45309;}
+.sc-off{background:#f1f5f9;color:#64748b;} .sc-train{background:#dcfce7;color:#15803d;}
+.sc-leave{background:#cffafe;color:#0e7490;} .sc-x{background:#fafafa;color:#94a3b8;}
+
+.sm-scroll{overflow-x:auto;}
+.sm-tbl{border-collapse:collapse;font-size:12px;white-space:nowrap;}
+.sm-tbl th,.sm-tbl td{border:1px solid #e5e9f0;text-align:center;height:28px;}
+.sm-name{min-width:96px;text-align:left;padding:0 8px;font-weight:700;background:#f8fafc;}
+.sm-emp{min-width:40px;color:var(--t3);background:#f8fafc;}
+.sm-sticky{position:sticky;left:0;z-index:2;}
+.sm-d{min-width:24px;color:var(--t1);font-weight:700;background:#f8fafc;}
+.sm-dow{min-width:24px;color:var(--t3);font-size:11px;background:#f8fafc;}
+.sm-sun{color:#dc2626;} .sm-sat{color:#2563eb;}
+.sm-sun-c{background:#fff5f5;} .sm-sat-c{background:#f5f9ff;}
+.sm-sum{min-width:36px;font-weight:800;background:#f8fafc;}
+.sm-cell{padding:0;}
+.sm-btn{width:100%;height:26px;border:0;background:transparent;font-weight:800;font-size:12px;cursor:pointer;}
+.sm-cell.sc-resp{background:#fee2e2;} .sm-cell.sc-day{background:#dbeafe;} .sm-cell.sc-night{background:#e0e7ff;}
+.sm-cell.sc-touban{background:#fef3c7;} .sm-cell.sc-off{background:#f8fafc;color:#94a3b8;}
+.sm-cell.sc-train{background:#dcfce7;} .sm-cell.sc-leave{background:#cffafe;} .sm-cell.sc-x{background:#fafafa;}
+.sm-total td{background:#eef2f7;font-weight:800;}
+.sm-hc{min-width:24px;} .sm-hc.sm-zero{color:#dc2626;background:#fff0f0;}
+
+/* [Auth] 担当現場スイッチャ */
+.nav-siteswitch{width:100%;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 8px;font-size:12px;min-height:34px;}
+.nav-siteswitch option{color:#0f172a;}

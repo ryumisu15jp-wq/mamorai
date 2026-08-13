@@ -1,10 +1,14 @@
 // [会社] 有給申請の確認/承認。現場からの申請を会社側で承認・却下（デモ:ローカル状態）。
+// 承認時は、アップロード様式(17.有給休暇申請.xlsx)準拠の「有給休暇申請書」PDFを出力できる。
 import { useState } from 'react'
+import { printLeaveForm, type LeaveForm } from './leaveForm.js'
 
 interface Req {
   id: string
   site: string
   staff: string
+  staffNo: string
+  dept: string
   from: string
   to: string
   days: number
@@ -13,9 +17,9 @@ interface Req {
 }
 
 const SEED: Req[] = [
-  { id: 'a1', site: 'ららテラス立川', staff: '鈴木 花', from: '2026-08-20', to: '2026-08-21', days: 2, reason: '私用', status: '申請中' },
-  { id: 'a2', site: '立川立飛', staff: '田中 誠', from: '2026-08-25', to: '2026-08-25', days: 1, reason: '通院', status: '申請中' },
-  { id: 'a3', site: 'ららテラス立川', staff: '佐藤 健', from: '2026-07-10', to: '2026-07-10', days: 1, reason: '私用', status: '承認' },
+  { id: 'a1', site: 'ららテラス立川(施設)', staff: '鈴木 花', staffNo: '812', dept: 'セキュリティサービス4', from: '2026-08-20', to: '2026-08-21', days: 2, reason: '帰省の為', status: '申請中' },
+  { id: 'a2', site: '立川立飛(施設)', staff: '田中 誠', staffNo: '655', dept: 'セキュリティサービス2', from: '2026-08-25', to: '2026-08-25', days: 1, reason: '通院の為', status: '申請中' },
+  { id: 'a3', site: 'ららテラス立川(施設)', staff: '佐藤 健', staffNo: '921', dept: 'セキュリティサービス4', from: '2026-07-10', to: '2026-07-10', days: 1, reason: '私用の為', status: '承認' },
 ]
 
 export function LeaveApproval(): JSX.Element {
@@ -24,6 +28,18 @@ export function LeaveApproval(): JSX.Element {
   const decide = (id: string, status: '承認' | '却下'): void => {
     setRows((p) => p.map((r) => (r.id === id ? { ...r, status } : r)))
     setToast(`申請を${status}しました`)
+  }
+  // 承認済みの申請を、様式PDF(印刷ダイアログ)で出力する。
+  const output = (r: Req): void => {
+    const form: LeaveForm = {
+      filedDate: '2026-08-15', dept: r.dept, site: r.site, staffNo: r.staffNo,
+      name: r.staff, fromDate: r.from, toDate: r.to, days: r.days, reason: r.reason,
+    }
+    if (!printLeaveForm(form)) setToast('ポップアップがブロックされました。許可してください。')
+  }
+  const approveAndOutput = (r: Req): void => {
+    decide(r.id, '承認')
+    output({ ...r, status: '承認' })
   }
   const pending = rows.filter((r) => r.status === '申請中')
 
@@ -41,14 +57,16 @@ export function LeaveApproval(): JSX.Element {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.site}</td><td>{r.staff}</td><td>{r.from} 〜 {r.to}</td><td>{r.days}日</td><td>{r.reason}</td>
+                  <td>{r.site}</td><td>{r.staff}<br /><span className="muted">No.{r.staffNo}</span></td><td>{r.from} 〜 {r.to}</td><td>{r.days}日</td><td>{r.reason}</td>
                   <td><span className={`status ${r.status === '承認' ? 'st-approved' : r.status === '却下' ? 'st-rejected' : 'st-submitted'}`}>{r.status}</span></td>
                   <td>
                     {r.status === '申請中' ? (
                       <span className="row-actions" style={{ gap: 6 }}>
-                        <button type="button" className="btn-sm btn-approve" onClick={() => decide(r.id, '承認')}>承認</button>
+                        <button type="button" className="btn-sm btn-approve" onClick={() => approveAndOutput(r)}>承認してPDF出力</button>
                         <button type="button" className="btn-sm btn-reject" onClick={() => decide(r.id, '却下')}>却下</button>
                       </span>
+                    ) : r.status === '承認' ? (
+                      <button type="button" className="btn-sm" onClick={() => output(r)}>申請書PDF</button>
                     ) : <span className="muted">—</span>}
                   </td>
                 </tr>
