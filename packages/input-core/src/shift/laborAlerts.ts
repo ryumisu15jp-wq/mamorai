@@ -7,7 +7,7 @@ import type {
   ShiftGrid, ShiftCell, Staff, ConstraintDef, ConstraintCategory, ConstraintSeverity, WorkType, ShiftTime,
 } from '../types.js'
 import { toEpochDay, isoWeekKey } from './constraints.js'
-import { getShiftTime, parseHm, restIntervalHours } from './shiftTimes.js'
+import { getShiftTime, restIntervalHours, shiftDurationHours } from './shiftTimes.js'
 
 export interface LaborAlert {
   category: ConstraintCategory
@@ -27,14 +27,6 @@ export interface LaborAlertSummary {
   soft: number
   total: number
   byCategory: Record<string, number>
-}
-
-/** WorkType の勤務時間(h)。勤務なし区分は0。 */
-export function shiftDurationHours(wt: WorkType, overrides?: Record<WorkType, ShiftTime>): number {
-  const st = getShiftTime(wt, overrides)
-  if (st === undefined) return 0
-  const d = parseHm(st.end) + (st.crossesMidnight === true ? 24 : 0) - parseHm(st.start)
-  return Number.isFinite(d) && d > 0 ? d : 0
 }
 
 function num(v: unknown, dflt: number): number {

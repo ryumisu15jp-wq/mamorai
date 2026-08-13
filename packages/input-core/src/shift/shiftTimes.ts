@@ -26,6 +26,14 @@ export function getShiftTime(
   return DEFAULT_SHIFT_TIMES[workType]
 }
 
+/** [労務] WorkType の勤務時間(h)。勤務なし区分は0。crossesMidnight は +24h。 */
+export function shiftDurationHours(wt: WorkType, overrides?: Record<WorkType, ShiftTime>): number {
+  const st = getShiftTime(wt, overrides)
+  if (st === undefined) return 0
+  const d = parseHm(st.end) + (st.crossesMidnight === true ? 24 : 0) - parseHm(st.start)
+  return Number.isFinite(d) && d > 0 ? d : 0
+}
+
 /** 'HH:MM' → 時（小数）。'21:30'→21.5。不正値は NaN。 */
 export function parseHm(hm: string): number {
   const h = Number(hm.slice(0, 2))

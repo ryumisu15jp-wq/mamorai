@@ -2,7 +2,7 @@
 import type {
   ConstraintDef, ConstraintViolation, ConstraintEvalResult, OptimizationContext, DraftAssignment, Staff, WorkType,
 } from '../types.js'
-import { restIntervalHours } from './shiftTimes.js'
+import { restIntervalHours, getShiftTime, shiftDurationHours } from './shiftTimes.js'
 
 /** 評価器の型: 1制約・割付案・コンテキストを受け取り違反配列を返す */
 export type ConstraintEvaluator = (
@@ -231,6 +231,70 @@ const evalMinRestHours: ConstraintEvaluator = (c, assignments, ctx) => {
   return out
 }
 
+/** worked な日付(epoch)集合（勤務時刻が定義される区分のみ） */
+function workedEpochs(byDate: Map<string, WorkType>, ctx: OptimizationContext): Set<number> {
+  const set = new Set<number>()
+  for (const [d, wt] of byDate) {
+    if (getShiftTime(wt, ctx.shiftTimes) !== undefined) set.add(toEpochDay(d))
+  }
+  return set
+}
+
+// [会社①] 当務(長時間勤務)後は restDays 日空ける
+const evalRestDayAfterLongShift: ConstraintEvaluator = (c, assignments, ctx) => {
+  const minHours = num(c.params, 'minHours', 22)
+  const restDays = num(c.params, 'restDays', 1)
+  const out: ConstraintViolation[] = []
+  for (const s of ctx.staff) {
+    const byDate = workTypeByDate(assignments, ctx, s.id)
+    const worked = workedEpochs(byDate, ctx)
+    for (const [d, wt] of byDate) {
+      if (shiftDurationHours(wt, ctx.shiftTimes) < minHours) continue
+      const e = toEpochDay(d)
+      for (let k = 1; k <= restDays; k++) {
+        if (worked.has(e + k)) {
+          out.push(violation(c, { staffId: s.id, date: d, message: `${s.id} 当務(${d})後${restDays}日空ける必要（翌${k}日目に勤務）` }))
+        }
+      }
+    }
+  }
+  return out
+}
+
+// [会社②] 夜勤の翌日は勤務しない
+const evalNoWorkAfterNight: ConstraintEvaluator = (c, assignments, ctx) => {
+  const raw = c.params['nightTypes']
+  const nightTypes = Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : ['夜勤']
+  const out: ConstraintViolation[] = []
+  for (const s of ctx.staff) {
+    const byDate = workTypeByDate(assignments, ctx, s.id)
+    const worked = workedEpochs(byDate, ctx)
+    for (const [d, wt] of byDate) {
+      if (!nightTypes.includes(wt)) continue
+      if (worked.has(toEpochDay(d) + 1)) {
+        out.push(violation(c, { staffId: s.id, date: d, message: `${s.id} 夜勤(${d})の翌日に勤務（夜勤後は休み）` }))
+      }
+    }
+  }
+  return out
+}
+
+// [会社③] 週休日数（1週=7日想定で off = 7 - 勤務日数）が need 未満なら違反
+const evalMinDaysOffPerWeek: ConstraintEvaluator = (c, assignments, ctx) => {
+  const need = num(c.params, 'days', 1)
+  const out: ConstraintViolation[] = []
+  for (const s of ctx.staff) {
+    for (const [, shifts] of weeklyShiftCounts(assignments, s.id)) {
+      const off = 7 - shifts
+      if (off < need) {
+        out.push(violation(c, { staffId: s.id, message: `${s.id} の週休 ${off}日（配慮目安${need}日未満）` }))
+        break
+      }
+    }
+  }
+  return out
+}
+
 // ── レジストリ ──
 
 const registry = new Map<string, ConstraintEvaluator>([
@@ -242,6 +306,10 @@ const registry = new Map<string, ConstraintEvaluator>([
   ['max_weekly_hours', evalMaxWeeklyHours],
   ['insurance_weekly_hours', evalInsuranceWeeklyHours],
   ['custom_flag', evalCustomFlag],
+  // 会社ルール（人事総務部）
+  ['rest_day_after_long_shift', evalRestDayAfterLongShift],
+  ['no_work_after_night', evalNoWorkAfterNight],
+  ['min_days_off_per_week', evalMinDaysOffPerWeek],
 ])
 
 /** [REQ-018] 独自 kind の評価器を登録（拡張フレームワーク） */
