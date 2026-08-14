@@ -4,7 +4,7 @@ import { capabilitiesForRole, canAccess } from '../index.js'
 describe('[Auth] コンソール別 capability', () => {
   it('現場(site)は運用系＋有給申請/講習会参加が可能・運営系は不可', () => {
     const c = capabilitiesForRole('site_operator')
-    for (const x of ['daily_report', 'monthly', 'shift', 'assignment', 'labor', 'notify', 'education', 'leave_request', 'training_apply', 'output'] as const) {
+    for (const x of ['daily_report', 'monthly', 'shift', 'assignment', 'labor', 'notify', 'education', 'leave_site_approval', 'training_site_approval', 'output', 'staff_register'] as const) {
       expect(c).toContain(x)
     }
     expect(c).not.toContain('company_management')

@@ -1,5 +1,6 @@
-// [会社] 講習会の登録・案内・予約受付。会社/本社が講習会を登録し、現場からの申込(予約)を受け付ける（デモ:ローカル状態）。
-import { useMemo, useState } from 'react'
+// [会社] 講習会の登録・案内・予約受付。会社/本社が講習会を登録し、現場承認済みの申込を受理する。
+import { useEffect, useMemo, useState } from 'react'
+import { listTraining, acceptCompanyTraining, subscribe, type TrainingApp } from '../../shared/trainingStore.js'
 
 interface Seminar {
   id: string
@@ -32,6 +33,13 @@ export function TrainingManage(): JSX.Element {
   }
   const sorted = useMemo(() => [...rows].sort((a, b) => a.date.localeCompare(b.date)), [rows])
 
+  // 現場承認済みの申込（勤務員PWA→現場承認→会社）を受理する。
+  const [apps, setApps] = useState<TrainingApp[]>(() => listTraining())
+  useEffect(() => subscribe(() => setApps(listTraining())), [])
+  const toAccept = apps.filter((a) => a.status === '現場承認')
+  const accept = (a: TrainingApp): void => { acceptCompanyTraining(a.id); setToast(`${a.name} さんの申込を受理し、教育簿に登録しました`) }
+  const kindClsApp = (k: TrainingApp['kind']): string => (k === '新任教育' ? 'st-rejected' : k === '現任教育' ? 'st-submitted' : 'st-draft')
+
   return (
     <div className="page">
       <header className="page-head">
@@ -49,6 +57,30 @@ export function TrainingManage(): JSX.Element {
             <label className="fl">定員<input className="input" type="number" value={cap} onChange={(e) => setCap(Number(e.target.value) || 0)} /></label>
           </div>
           <div className="row-actions"><button type="button" className="btn btn-primary" onClick={add}>登録して案内</button></div>
+        </div>
+      </section>
+
+      <section className="card" aria-label="参加申込の受理">
+        <div className="card-h"><h2>参加申込の受理（現場承認済）</h2><span className="muted">受理待ち {toAccept.length} 件 / 受理済 {apps.filter((a) => a.status === '会社受理').length} 件</span></div>
+        <div className="card-b">
+          <table className="tbl">
+            <thead><tr><th>区分</th><th>講習会</th><th>対象者</th><th>現場承認</th><th>状態</th><th></th></tr></thead>
+            <tbody>
+              {apps.filter((a) => a.status === '現場承認' || a.status === '会社受理').map((a) => (
+                <tr key={a.id}>
+                  <td><span className={`status ${kindClsApp(a.kind)}`}>{a.kind}</span></td>
+                  <td>{a.seminarTitle}</td>
+                  <td>{a.name}<br /><span className="muted">No.{a.staffNo}</span></td>
+                  <td>{a.siteApprover ? <span className="muted">{a.siteApprover.name}<br />{a.siteApprover.date}</span> : '—'}</td>
+                  <td><span className={`status ${a.status === '会社受理' ? 'st-approved' : 'st-submitted'}`}>{a.status}</span></td>
+                  <td>{a.status === '現場承認' ? <button type="button" className="btn-sm btn-approve" onClick={() => accept(a)}>受理</button> : <span className="muted">教育簿登録済</span>}</td>
+                </tr>
+              ))}
+              {apps.filter((a) => a.status === '現場承認' || a.status === '会社受理').length === 0 && (
+                <tr><td colSpan={6} className="muted">現場承認済みの申込はありません</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 

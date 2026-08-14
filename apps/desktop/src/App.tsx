@@ -4,9 +4,11 @@ import { QuickDailyReport } from './features/report/QuickDailyReport.js'
 import { StructuredReport } from './features/report/StructuredReport.js'
 import { MonthlyReport } from './features/month/MonthlyReport.js'
 import { ReportList } from './features/report/ReportList.js'
+import { ImportReports } from './features/report/ImportReports.js'
 import { RiskRanking } from './features/risk/RiskRanking.js'
 import { ShiftMonth } from './features/shift/ShiftMonth.js'
 import { DailyAssignment } from './features/shift/DailyAssignment.js'
+import { Placement } from './features/placement/Placement.js'
 import { ConstraintEditor } from './features/shift/ConstraintEditor.js'
 import { AiOptimizer } from './features/shift/AiOptimizer.js'
 import { LaborAlerts } from './features/shift/LaborAlerts.js'
@@ -15,9 +17,10 @@ import { Education } from './features/training/Education.js'
 import { EducationForms } from './features/training/EducationForms.js'
 import { TemplateSettings } from './features/template/TemplateSettings.js'
 import { OutputCenter } from './features/output/OutputCenter.js'
-import { LeaveRequest } from './features/leave/LeaveRequest.js'
+import { LeaveSiteApproval } from './features/leave/LeaveSiteApproval.js'
 import { LeaveApproval } from './features/leave/LeaveApproval.js'
-import { TrainingApply } from './features/training/TrainingApply.js'
+import { StaffRegister } from './features/staff/StaffRegister.js'
+import { TrainingSiteApproval } from './features/training/TrainingSiteApproval.js'
 import { TrainingManage } from './features/training/TrainingManage.js'
 import { CompanyManagement } from './features/platform/CompanyManagement.js'
 import { ContractStatus } from './features/platform/ContractStatus.js'
@@ -34,10 +37,10 @@ import type { Session } from './features/auth/authTypes.js'
 
 type Tab =
   | 'opsdash' | 'companies' | 'contracts' | 'seccheck' | 'platnotice'
-  | 'dashboard'
+  | 'dashboard' | 'staffreg'
   | 'leaveapprove' | 'trmanage'
-  | 'sreport' | 'report' | 'output' | 'month' | 'list' | 'risk'
-  | 'shift' | 'assign' | 'ai' | 'labor' | 'leave' | 'trapply'
+  | 'sreport' | 'report' | 'output' | 'month' | 'list' | 'import' | 'risk'
+  | 'shift' | 'assign' | 'placement' | 'ai' | 'labor' | 'leave' | 'trapply'
   | 'constraint' | 'template' | 'education' | 'edudocs' | 'notify'
 
 // 各タブは capability に紐づく。ログインロールが持つ capability のタブだけ表示する（コンソール別）。
@@ -53,18 +56,21 @@ const TABS: { key: Tab; label: string; cap: Capability }[] = [
   { key: 'trmanage', label: '講習会管理', cap: 'training_manage' },
   // 現場
   { key: 'dashboard', label: 'ダッシュボード', cap: 'dashboard' },
+  { key: 'staffreg', label: '勤務員登録', cap: 'staff_register' },
   { key: 'sreport', label: '日報入力', cap: 'daily_report' },
   { key: 'report', label: '日報入力(簡易)', cap: 'daily_report' },
   { key: 'output', label: '出力センター', cap: 'output' },
   { key: 'month', label: '月報', cap: 'monthly' },
   { key: 'list', label: '日報一覧', cap: 'report_list' },
+  { key: 'import', label: '日報取込', cap: 'report_import' },
   { key: 'risk', label: 'リスク', cap: 'risk' },
   { key: 'shift', label: 'シフト', cap: 'shift' },
-  { key: 'assign', label: '配置表', cap: 'assignment' },
+  { key: 'assign', label: '配置(日次)', cap: 'assignment' },
+  { key: 'placement', label: '配置予定・実績', cap: 'placement' },
   { key: 'ai', label: 'AIシフト', cap: 'ai_shift' },
   { key: 'labor', label: '労務', cap: 'labor' },
-  { key: 'leave', label: '有給申請', cap: 'leave_request' },
-  { key: 'trapply', label: '講習会', cap: 'training_apply' },
+  { key: 'leave', label: '有給承認', cap: 'leave_site_approval' },
+  { key: 'trapply', label: '講習会承認', cap: 'training_site_approval' },
   // 共通/会社設定
   { key: 'constraint', label: '労務ルール', cap: 'constraint' },
   { key: 'template', label: 'テンプレ設定', cap: 'template' },
@@ -131,18 +137,21 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
         {tab === 'leaveapprove' && allow('leaveapprove') && <LeaveApproval />}
         {tab === 'trmanage' && allow('trmanage') && <TrainingManage />}
         {tab === 'dashboard' && allow('dashboard') && <Dashboard onNavigate={setTab} />}
+        {tab === 'staffreg' && allow('staffreg') && <StaffRegister />}
         {tab === 'sreport' && allow('sreport') && <StructuredReport />}
         {tab === 'report' && allow('report') && <QuickDailyReport />}
         {tab === 'output' && allow('output') && <OutputCenter />}
         {tab === 'month' && allow('month') && <MonthlyReport />}
         {tab === 'list' && allow('list') && <ReportList />}
+        {tab === 'import' && allow('import') && <ImportReports />}
         {tab === 'risk' && allow('risk') && <RiskRanking />}
         {tab === 'shift' && allow('shift') && <ShiftMonth />}
         {tab === 'assign' && allow('assign') && <DailyAssignment />}
+        {tab === 'placement' && allow('placement') && <Placement />}
         {tab === 'ai' && allow('ai') && <AiOptimizer constraints={constraints} onChange={setConstraints} />}
         {tab === 'labor' && allow('labor') && <LaborAlerts constraints={constraints} />}
-        {tab === 'leave' && allow('leave') && <LeaveRequest />}
-        {tab === 'trapply' && allow('trapply') && <TrainingApply />}
+        {tab === 'leave' && allow('leave') && <LeaveSiteApproval />}
+        {tab === 'trapply' && allow('trapply') && <TrainingSiteApproval />}
         {tab === 'constraint' && allow('constraint') && <ConstraintEditor constraints={constraints} onChange={setConstraints} />}
         {tab === 'template' && allow('template') && <TemplateSettings />}
         {tab === 'edudocs' && allow('edudocs') && <EducationForms />}

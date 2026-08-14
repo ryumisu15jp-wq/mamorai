@@ -1,29 +1,35 @@
-// [勤務員PWA] 有給申請。勤務員が申請→現場/会社コンソールに表示され承認される。
-// 承認時、会社側で「有給休暇申請書」PDF(アップロード様式)が出力される。
-import { useState } from 'react'
+// [勤務員PWA] 有給申請。提出は共有ストアへ保存され、現場→会社の承認に回る。
+// 承認状況（現場承認/会社承認/却下）はこの画面にも反映される。
+import { useEffect, useState } from 'react'
 import type { Staff } from '../staff.js'
-
-interface Row { id: string; from: string; to: string; days: number; reason: string; status: '申請中' | '承認' | '却下' }
+import { COMPANY } from '../../pilot/bulgari.js'
+import { submitLeave, listLeaveForStaff, subscribe, type LeaveReq } from '../../shared/leaveStore.js'
 
 function diffDays(from: string, to: string): number {
   if (from === '' || to === '') return 1
   return Math.max(1, Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1)
 }
+const statusCls = (s: LeaveReq['status']): string =>
+  s === '会社承認' ? 'h-ok' : s === '却下' ? 'h-off' : 'h-night'
 
 export function LeaveApply({ staff, site }: { staff: Staff; site: string }): JSX.Element {
   const [from, setFrom] = useState('2026-09-01')
   const [to, setTo] = useState('2026-09-01')
   const [reason, setReason] = useState('')
-  const [rows, setRows] = useState<Row[]>([
-    { id: 'l0', from: '2026-07-20', to: '2026-07-20', days: 1, reason: '私用の為', status: '承認' },
-  ])
+  const [rows, setRows] = useState<LeaveReq[]>(() => listLeaveForStaff(staff.no))
   const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => subscribe(() => setRows(listLeaveForStaff(staff.no))), [staff.no])
+
   const remaining = 20 - rows.filter((r) => r.status !== '却下').reduce((s, r) => s + r.days, 0)
 
   const submit = (): void => {
     if (from === '' || to === '') { setToast('日付を入力してください'); return }
-    const d = diffDays(from, to)
-    setRows((p) => [{ id: `l${p.length + 1}`, from, to, days: d, reason: reason || '私用の為', status: '申請中' }, ...p])
+    submitLeave({
+      staffNo: staff.no, name: staff.name, company: COMPANY.name, dept: staff.dept, site,
+      from, to, days: diffDays(from, to), reason: reason || '私用の為',
+    })
+    setRows(listLeaveForStaff(staff.no))
     setReason('')
     setToast('有給を申請しました（現場・会社の承認待ち）')
   }
@@ -47,13 +53,14 @@ export function LeaveApply({ staff, site }: { staff: Staff; site: string }): JSX
 
       <h2 className="pwa-h2">申請履歴</h2>
       <ul className="pwa-list">
+        {rows.length === 0 && <li className="pwa-list-row"><span className="pwa-list-sub">まだ申請はありません</span></li>}
         {rows.map((r) => (
           <li key={r.id} className="pwa-list-row">
             <div>
               <div className="pwa-list-main">{r.from} 〜 {r.to}（{r.days}日）</div>
-              <div className="pwa-list-sub">{r.reason}</div>
+              <div className="pwa-list-sub">私用の為、{r.reason}</div>
             </div>
-            <span className={`chip ${r.status === '承認' ? 'h-ok' : r.status === '却下' ? 'h-off' : 'h-night'}`}>{r.status}</span>
+            <span className={`chip ${statusCls(r.status)}`}>{r.status}</span>
           </li>
         ))}
       </ul>

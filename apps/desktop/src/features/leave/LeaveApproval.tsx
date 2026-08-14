@@ -1,73 +1,90 @@
-// [会社] 有給申請の確認/承認。現場からの申請を会社側で承認・却下（デモ:ローカル状態）。
-// 承認時は、アップロード様式(17.有給休暇申請.xlsx)準拠の「有給休暇申請書」PDFを出力できる。
-import { useState } from 'react'
+// [会社] 有給申請の最終承認。現場が一次承認した申請(現場承認)を会社担当者が最終承認する。
+// 承認時、会社担当者の印・署名が自動付与され、有給休暇申請書(A5・様式準拠)PDFを出力する。
+import { useEffect, useMemo, useState } from 'react'
+import { COMPANY_APPROVERS } from '../../pilot/bulgari.js'
+import { buildSealSvg, buildSignatureSvg } from '../../lib/sealSignature.js'
 import { printLeaveForm, type LeaveForm } from './leaveForm.js'
+import { listLeave, approveCompany, rejectLeave, subscribe, type LeaveReq } from '../../shared/leaveStore.js'
 
-interface Req {
-  id: string
-  site: string
-  staff: string
-  staffNo: string
-  dept: string
-  from: string
-  to: string
-  days: number
-  reason: string
-  status: '申請中' | '承認' | '却下'
-}
-
-const SEED: Req[] = [
-  { id: 'a1', site: 'ららテラス立川(施設)', staff: '鈴木 花', staffNo: '812', dept: 'セキュリティサービス4', from: '2026-08-20', to: '2026-08-21', days: 2, reason: '帰省の為', status: '申請中' },
-  { id: 'a2', site: '立川立飛(施設)', staff: '田中 誠', staffNo: '655', dept: 'セキュリティサービス2', from: '2026-08-25', to: '2026-08-25', days: 1, reason: '通院の為', status: '申請中' },
-  { id: 'a3', site: 'ららテラス立川(施設)', staff: '佐藤 健', staffNo: '921', dept: 'セキュリティサービス4', from: '2026-07-10', to: '2026-07-10', days: 1, reason: '私用の為', status: '承認' },
-]
+const today = '2026-09-16'
 
 export function LeaveApproval(): JSX.Element {
-  const [rows, setRows] = useState<Req[]>(SEED)
+  const [rows, setRows] = useState<LeaveReq[]>(() => listLeave())
+  const [approverName, setApproverName] = useState<string>(() => COMPANY_APPROVERS[0]!.name)
   const [toast, setToast] = useState<string | null>(null)
-  const decide = (id: string, status: '承認' | '却下'): void => {
-    setRows((p) => p.map((r) => (r.id === id ? { ...r, status } : r)))
-    setToast(`申請を${status}しました`)
-  }
-  // 承認済みの申請を、様式PDF(印刷ダイアログ)で出力する。
-  const output = (r: Req): void => {
-    const form: LeaveForm = {
-      filedDate: '2026-08-15', dept: r.dept, site: r.site, staffNo: r.staffNo,
-      name: r.staff, fromDate: r.from, toDate: r.to, days: r.days, reason: r.reason,
+  useEffect(() => subscribe(() => setRows(listLeave())), [])
+
+  const approver = COMPANY_APPROVERS.find((a) => a.name === approverName) ?? COMPANY_APPROVERS[0]!
+  const seal = useMemo(() => buildSealSvg(approver.name, 46), [approver])
+  const sig = useMemo(() => buildSignatureSvg(approver.name, 110, 22), [approver])
+
+  const pending = rows.filter((r) => r.status === '現場承認')
+
+  const toForm = (r: LeaveReq): LeaveForm => ({
+    filedDate: r.submittedAt, company: r.company, dept: r.dept, site: r.site, staffNo: r.staffNo,
+    name: r.name, fromDate: r.from, toDate: r.to, days: r.days, reason: r.reason,
+    siteApprover: r.siteApprover, companyApprover: r.companyApprover,
+  })
+
+  const approveAndOutput = (r: LeaveReq): void => {
+    const ca = { name: approver.name, title: approver.title, date: today }
+    approveCompany(r.id, ca)
+    if (!printLeaveForm(toForm({ ...r, status: '会社承認', companyApprover: ca }))) {
+      setToast('ポップアップがブロックされました。許可してください。')
+    } else {
+      setToast(`${r.name} さんの申請を承認し、有給休暇申請書(A5)を出力しました`)
     }
-    if (!printLeaveForm(form)) setToast('ポップアップがブロックされました。許可してください。')
   }
-  const approveAndOutput = (r: Req): void => {
-    decide(r.id, '承認')
-    output({ ...r, status: '承認' })
-  }
-  const pending = rows.filter((r) => r.status === '申請中')
+  const reOutput = (r: LeaveReq): void => { printLeaveForm(toForm(r)) }
+  const reject = (r: LeaveReq): void => { rejectLeave(r.id, `会社(${approver.title} ${approver.name})`); setToast(`${r.name} さんの申請を却下しました`) }
 
   return (
     <div className="page">
       <header className="page-head">
-        <h1 className="page-title">有給申請の確認</h1>
+        <h1 className="page-title">有給申請の確認（会社）</h1>
         <span className="muted">未処理 {pending.length} 件</span>
       </header>
+
+      <section className="card" aria-label="承認担当者">
+        <div className="card-h"><h2>承認担当者（会社）</h2><span className="muted">承認時に印・署名を自動付与</span></div>
+        <div className="card-b">
+          <div className="filters" style={{ alignItems: 'center' }}>
+            <label className="fl">担当者
+              <select className="input" value={approverName} onChange={(e) => setApproverName(e.target.value)}>
+                {COMPANY_APPROVERS.map((a) => <option key={a.name} value={a.name}>{a.title}　{a.name}</option>)}
+              </select>
+            </label>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <span dangerouslySetInnerHTML={{ __html: seal }} />
+              <span dangerouslySetInnerHTML={{ __html: sig }} />
+            </span>
+          </div>
+        </div>
+      </section>
+
       <section className="card" aria-label="有給申請一覧">
         <div className="card-h"><h2>申請一覧</h2><span className="muted">{rows.length} 件</span></div>
         <div className="card-b">
           <table className="tbl">
-            <thead><tr><th>現場</th><th>対象者</th><th>期間</th><th>日数</th><th>理由</th><th>状態</th><th></th></tr></thead>
+            <thead><tr><th>現場</th><th>対象者</th><th>期間</th><th>日数</th><th>理由</th><th>現場承認</th><th>状態</th><th></th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.site}</td><td>{r.staff}<br /><span className="muted">No.{r.staffNo}</span></td><td>{r.from} 〜 {r.to}</td><td>{r.days}日</td><td>{r.reason}</td>
-                  <td><span className={`status ${r.status === '承認' ? 'st-approved' : r.status === '却下' ? 'st-rejected' : 'st-submitted'}`}>{r.status}</span></td>
+                  <td>{r.site}</td>
+                  <td>{r.name}<br /><span className="muted">No.{r.staffNo}</span></td>
+                  <td>{r.from} 〜 {r.to}</td><td>{r.days}日</td><td>私用の為、{r.reason}</td>
+                  <td>{r.siteApprover ? <span className="muted">{r.siteApprover.name}<br />{r.siteApprover.date}</span> : <span className="muted">—</span>}</td>
+                  <td><span className={`status ${r.status === '会社承認' ? 'st-approved' : r.status === '却下' ? 'st-rejected' : r.status === '現場承認' ? 'st-submitted' : 'st-draft'}`}>{r.status}</span></td>
                   <td>
-                    {r.status === '申請中' ? (
+                    {r.status === '現場承認' ? (
                       <span className="row-actions" style={{ gap: 6 }}>
                         <button type="button" className="btn-sm btn-approve" onClick={() => approveAndOutput(r)}>承認してPDF出力</button>
-                        <button type="button" className="btn-sm btn-reject" onClick={() => decide(r.id, '却下')}>却下</button>
+                        <button type="button" className="btn-sm btn-reject" onClick={() => reject(r)}>却下</button>
                       </span>
-                    ) : r.status === '承認' ? (
-                      <button type="button" className="btn-sm" onClick={() => output(r)}>申請書PDF</button>
-                    ) : <span className="muted">—</span>}
+                    ) : r.status === '会社承認' ? (
+                      <button type="button" className="btn-sm" onClick={() => reOutput(r)}>申請書PDF</button>
+                    ) : r.status === '申請中' ? <span className="muted">現場の承認待ち</span>
+                      : <span className="muted">—</span>}
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,10 @@
 // [現場] 月次シフト表（氏名 × 1〜31日）。BHT「シフト掲示用」様式に準拠。
 // セル=勤務区分コード。クリックで区分を巡回入力（＝シフト登録）。曜日ヘッダ＋日別体制(出勤数)を集計。
 // 区分は現場で追加・調整できる想定（既定コードを持つ）。
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { activeStaff, subscribe as subStaff } from '../../shared/staffStore.js'
+import { hopesForMonth, subscribe as subHope } from '../../shared/shiftHopeStore.js'
+import { saveShift } from '../../shared/shiftStore.js'
 
 // 勤務区分コード（責任者/日勤A..C/夜勤A,B/当務/明休/公休/研修/有給/非番）。working=出勤としてカウント。
 interface Code { key: string; label: string; working: boolean; cls: string }
@@ -24,14 +27,8 @@ const codeOf = (k: string): Code => CODES.find((c) => c.key === k) ?? CODES[0]!
 const DOW = ['日', '月', '火', '水', '木', '金', '土']
 
 interface Staff { id: string; name: string; emp: string }
-const STAFF: Staff[] = [
-  { id: 'u1', name: '三角 龍彦', emp: '社員' },
-  { id: 'u2', name: '藤井 隆幸', emp: '社員' },
-  { id: 'u3', name: '武田 崇将', emp: '社員' },
-  { id: 'u4', name: '石井 秀幸', emp: '社員' },
-  { id: 'u5', name: '鈴木 花', emp: '契約' },
-  { id: 'u6', name: '田中 誠', emp: '契約' },
-]
+// 名簿は勤務員登録(staffStore)と共通。id=スタッフNo（シフト希望と突合）。
+const toRoster = (): Staff[] => activeStaff().map((s) => ({ id: s.no, name: s.name, emp: s.role }))
 
 function daysInMonth(month: string): { date: string; day: number; dow: number }[] {
   const [y, m] = month.split('-').map(Number)
@@ -55,15 +52,53 @@ function seedGrid(staff: Staff[], days: { day: number }[]): Record<string, strin
 }
 
 export function ShiftMonth(): JSX.Element {
-  const [month, setMonth] = useState('2026-08')
+  const [month, setMonth] = useState('2026-09')
   const days = useMemo(() => daysInMonth(month), [month])
-  const [grid, setGrid] = useState<Record<string, string[]>>(() => seedGrid(STAFF, days))
+  const [roster, setRoster] = useState<Staff[]>(() => toRoster())
+  const [grid, setGrid] = useState<Record<string, string[]>>(() => seedGrid(toRoster(), days))
   const [toast, setToast] = useState<string | null>(null)
+  // 勤務員PWAから提出されたシフト希望（対象月）。
+  const [hopeCount, setHopeCount] = useState<number>(() => hopesForMonth(month).length)
+  useEffect(() => subHope(() => setHopeCount(hopesForMonth(month).length)), [month])
+  // 勤務員登録(staffStore)の変更を名簿に反映。新規登録者は空欄行を追加。
+  useEffect(() => subStaff(() => setRoster(toRoster())), [])
+  useEffect(() => {
+    setGrid((p) => {
+      const g = { ...p }
+      roster.forEach((s) => { if (!g[s.id]) g[s.id] = days.map(() => '') })
+      return g
+    })
+  }, [roster, days])
+  // シフト(=配置予定)を保存。配置予定表がこれを参照する。
+  useEffect(() => {
+    saveShift({ ym: month, staff: roster.map((r) => ({ no: r.id, name: r.name })), grid, savedAt: month })
+  }, [grid, month, roster])
 
   // 月変更時はグリッド作り直し
   const changeMonth = (m: string): void => {
     setMonth(m)
-    setGrid(seedGrid(STAFF, daysInMonth(m)))
+    setGrid(seedGrid(roster, daysInMonth(m)))
+    setHopeCount(hopesForMonth(m).length)
+  }
+
+  // 勤務員の希望をシフトに反映（休み希望→公休 / 夜勤希望→夜勤A / 勤務可→空欄なら日勤B）。
+  const applyHopes = (): void => {
+    const hs = hopesForMonth(month)
+    if (hs.length === 0) { setToast('この月の希望はまだ提出されていません'); return }
+    setGrid((p) => {
+      const g = { ...p }
+      for (const h of hs) {
+        const row = [...(g[h.staffNo] ?? days.map(() => ''))]
+        for (const [d, v] of Object.entries(h.days)) {
+          const i = Number(d) - 1
+          if (i < 0 || i >= row.length) continue
+          row[i] = v === '休' ? '休' : v === '夜' ? '夜A' : (row[i] && row[i] !== '' ? row[i]! : '日B')
+        }
+        g[h.staffNo] = row
+      }
+      return g
+    })
+    setToast(`勤務員の希望 ${hs.length}名分をシフトに反映しました`)
   }
 
   // セルクリックで次の区分へ巡回（シフト登録）
@@ -78,7 +113,7 @@ export function ShiftMonth(): JSX.Element {
 
   // 日別 出勤者数（体制）
   const headcount = useMemo(
-    () => days.map((_, i) => STAFF.reduce((n, s) => n + (codeOf(grid[s.id]?.[i] ?? '').working ? 1 : 0), 0)),
+    () => days.map((_, i) => roster.reduce((n, s) => n + (codeOf(grid[s.id]?.[i] ?? '').working ? 1 : 0), 0)),
     [grid, days],
   )
   // スタッフ別 出勤日数
@@ -102,9 +137,10 @@ export function ShiftMonth(): JSX.Element {
 
       <section className="card" aria-label="月次シフト表">
         <div className="card-h">
-          <h2>現場名：ブルガリホテル東京（デモ）</h2>
-          <span className="muted">{month} / {STAFF.length}名</span>
-          <button type="button" className="btn btn-secondary" style={{ marginLeft: 'auto' }} onClick={() => setToast('勤務表を出力しました（出力センターの現場様式・本結線時PDF/Excel）')}>勤務表を出力</button>
+          <h2>現場名：ブルガリホテル東京</h2>
+          <span className="muted">{month} / {roster.length}名 ／ 提出希望 {hopeCount}名</span>
+          <button type="button" className="btn btn-primary" style={{ marginLeft: 'auto' }} onClick={applyHopes}>勤務員の希望を反映</button>
+          <button type="button" className="btn btn-secondary" onClick={() => setToast('勤務表を出力しました（出力センターの現場様式・本結線時PDF/Excel）')}>勤務表を出力</button>
         </div>
         <div className="card-b" style={{ padding: 0 }}>
           <div className="sm-scroll">
@@ -128,7 +164,7 @@ export function ShiftMonth(): JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {STAFF.map((s) => (
+                {roster.map((s) => (
                   <tr key={s.id}>
                     <td className="sm-name sm-sticky">{s.name}</td>
                     <td className="sm-emp">{s.emp}</td>
