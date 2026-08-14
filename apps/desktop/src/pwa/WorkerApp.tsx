@@ -2,6 +2,8 @@
 //   希望(シフト希望提出) / 有給(有給申請) / 研修(講習会申込) / 連絡(お知らせ・業務連絡)
 import { useState } from 'react'
 import { signInStaff, changeStaffPin, type Staff } from './staff.js'
+import { isSupabaseConfigured } from '../lib/supabaseClient.js'
+import { APP_VERSION } from '../version.js'
 import { ShiftHope } from './screens/ShiftHope.js'
 import { LeaveApply } from './screens/LeaveApply.js'
 import { TrainingApplyPwa } from './screens/TrainingApplyPwa.js'
@@ -38,7 +40,8 @@ function StaffLogin({ onLogin }: { onLogin: (s: Staff, pin: string) => void }): 
         </label>
         {err && <p className="pwa-err" role="alert">{err}</p>}
         <button type="button" className="pwa-btn pwa-btn-primary" onClick={submit}>ログイン</button>
-        <p className="pwa-note">初期PINは生年月日の月日（例: 783 → 0412）。初回ログイン後に変更します。</p>
+        <p className="pwa-note">初期PINは生年月日の月日（例: 783 → 0415）。初回ログイン後に変更します。</p>
+        <p className="pwa-note" style={{ marginTop: 6, fontSize: 11 }}>{APP_VERSION} / DB接続: {isSupabaseConfigured() ? 'ON' : 'OFF'}</p>
       </div>
     </div>
   )

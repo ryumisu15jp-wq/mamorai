@@ -30,6 +30,8 @@ import { PlatformNotice } from './features/platform/PlatformNotice.js'
 import { demoConstraints } from './features/shift/demoShift.js'
 import { capabilitiesForRole, type Capability, type ConstraintDef } from '@mamorai/input-core'
 import { setSiteCodes } from './shared/runtimeCtx.js'
+import { isSupabaseConfigured } from './lib/supabaseClient.js'
+import { APP_VERSION } from './version.js'
 import type { Session } from './features/auth/authTypes.js'
 
 // MAMOR-AI デスクトップ MVP のシェル。
@@ -129,7 +131,7 @@ export function App({ session, onLogout }: { session?: Session; onLogout?: () =>
             {t.label}
           </button>
         ))}
-        <span className="nav-note">MAMOR-AI / ロール別表示（{tabs.length}機能） / 集計・出力は @mamorai/input-core</span>
+        <span className="nav-note">MAMOR-AI / {APP_VERSION} / DB接続: <b>{isSupabaseConfigured() ? 'ON（本番DB）' : 'OFF（デモ）'}</b> / {tabs.length}機能</span>
       </nav>
       <main className="app-main" id="main">
         {tab === 'opsdash' && allow('opsdash') && <OpsDashboard />}
