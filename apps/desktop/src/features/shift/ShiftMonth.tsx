@@ -3,8 +3,8 @@
 // 区分は現場で追加・調整できる想定（既定コードを持つ）。
 import { useEffect, useMemo, useState } from 'react'
 import { listStaff as apiListStaff, subscribe as subStaff } from '../staff/staffApi.js'
-import { hopesForMonth, subscribe as subHope } from '../../shared/shiftHopeStore.js'
-import { saveShift } from '../../shared/shiftStore.js'
+import { hopesForMonth, subscribe as subHope } from './shiftHopeApi.js'
+import { saveShift } from './shiftApi.js'
 
 // 勤務区分コード（責任者/日勤A..C/夜勤A,B/当務/明休/公休/研修/有給/非番）。working=出勤としてカウント。
 interface Code { key: string; label: string; working: boolean; cls: string }
@@ -56,8 +56,12 @@ export function ShiftMonth(): JSX.Element {
   const [grid, setGrid] = useState<Record<string, string[]>>({})
   const [toast, setToast] = useState<string | null>(null)
   // 勤務員PWAから提出されたシフト希望（対象月）。
-  const [hopeCount, setHopeCount] = useState<number>(() => hopesForMonth(month).length)
-  useEffect(() => subHope(() => setHopeCount(hopesForMonth(month).length)), [month])
+  const [hopeCount, setHopeCount] = useState<number>(0)
+  useEffect(() => {
+    const refresh = (): void => { void hopesForMonth(month).then((h) => setHopeCount(h.length)) }
+    refresh()
+    return subHope(refresh)
+  }, [month])
   // 名簿(勤務員登録)の変更を反映。新規登録者は既定ローテで行追加。
   const loadRoster = (): void => { void apiListStaff().then((list) => setRoster(list.filter((s) => s.active).map((s) => ({ id: s.no, name: s.name, emp: s.role })))) }
   useEffect(() => { loadRoster(); return subStaff(loadRoster) }, [])
@@ -70,19 +74,19 @@ export function ShiftMonth(): JSX.Element {
   }, [roster, days])
   // シフト(=配置予定)を保存。配置予定表がこれを参照する。
   useEffect(() => {
-    saveShift({ ym: month, staff: roster.map((r) => ({ no: r.id, name: r.name })), grid, savedAt: month })
+    void saveShift({ ym: month, staff: roster.map((r) => ({ no: r.id, name: r.name })), grid, savedAt: month })
   }, [grid, month, roster])
 
   // 月変更時はグリッド作り直し
   const changeMonth = (m: string): void => {
     setMonth(m)
     setGrid(seedGrid(roster, daysInMonth(m)))
-    setHopeCount(hopesForMonth(m).length)
+    void hopesForMonth(m).then((h) => setHopeCount(h.length))
   }
 
   // 勤務員の希望をシフトに反映（休み希望→公休 / 夜勤希望→夜勤A / 勤務可→空欄なら日勤B）。
   const applyHopes = (): void => {
-    const hs = hopesForMonth(month)
+    void hopesForMonth(month).then((hs) => {
     if (hs.length === 0) { setToast('この月の希望はまだ提出されていません'); return }
     setGrid((p) => {
       const g = { ...p }
@@ -98,6 +102,7 @@ export function ShiftMonth(): JSX.Element {
       return g
     })
     setToast(`勤務員の希望 ${hs.length}名分をシフトに反映しました`)
+    })
   }
 
   // セルクリックで次の区分へ巡回（シフト登録）

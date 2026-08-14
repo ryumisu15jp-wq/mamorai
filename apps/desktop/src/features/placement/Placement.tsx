@@ -3,7 +3,8 @@
 //   配置表(実績):     日報から抽出した実績（＋管制実績）。当月末までの実配置。
 // 実績データは BHT日報(ブルガリ 2026年6月)の取込済みデータを使用。月次件数からリスクを算出する。
 import { useEffect, useMemo, useState } from 'react'
-import { loadShift, subscribe as subShift, type ShiftSnapshot } from '../../shared/shiftStore.js'
+import { loadShift, subscribe as subShift } from '../shift/shiftApi.js'
+import type { ShiftSnapshot } from '../../shared/shiftStore.js'
 import { BHT_JUNE } from '../../pilot/bhtJune.js'
 import { printPlacementPlan, printPlacementActual, printMonthlyReport } from './placementPrint.js'
 
@@ -47,10 +48,13 @@ const riskCls = (l: RiskItem['level']): string => (l === '高' ? 'st-rejected' :
 export function Placement(): JSX.Element {
   const [view, setView] = useState<View>('plan')
   const [ym, setYm] = useState('2026-09')
-  const [snap, setSnap] = useState<ShiftSnapshot | undefined>(() => loadShift(ym))
+  const [snap, setSnap] = useState<ShiftSnapshot | undefined>(undefined)
   const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => subShift(() => setSnap(loadShift(ym))), [ym])
-  useEffect(() => setSnap(loadShift(ym)), [ym])
+  useEffect(() => {
+    const refresh = (): void => { void loadShift(ym).then(setSnap) }
+    refresh()
+    return subShift(refresh)
+  }, [ym])
 
   const june = BHT_JUNE
   const risk = useMemo(() => computeRisk(june.counts), [june])

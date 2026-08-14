@@ -1,2 +1,2 @@
 // アプリのビルド版。本番に載っているフロントを画面から特定するための表示用。
-export const APP_VERSION = 'step6-2 (staff DB連携) / 2026-08-14'
+export const APP_VERSION = 'step6-3 (シフト希望・配置予定 DB連携) / 2026-08-14'

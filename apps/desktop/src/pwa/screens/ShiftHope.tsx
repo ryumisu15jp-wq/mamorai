@@ -2,7 +2,7 @@
 // 提出内容は現場管理コンソールのシフト作成に反映される想定（本結線時はDB）。
 import { useMemo, useState } from 'react'
 import type { Staff } from '../staff.js'
-import { submitHope, type HopeCode } from '../../shared/shiftHopeStore.js'
+import { submitHope, type HopeCode } from '../../features/shift/shiftHopeApi.js'
 
 type Hope = '' | '可' | '夜' | '休'
 const CYCLE: Hope[] = ['', '可', '夜', '休']
@@ -43,8 +43,9 @@ export function ShiftHope({ staff, site }: { staff: Staff; site: string }): JSX.
     // 空欄を除いた希望のみを対象月として現場へ提出（共有ストア）。
     const days: Record<number, HopeCode> = {}
     for (const [d, v] of Object.entries(hopes)) { if (v !== '') days[Number(d)] = v as HopeCode }
-    submitHope({ staffNo: staff.no, name: staff.name, site, ym, days, note, submittedAt: ym })
-    setSubmitted(`${ym} の希望を提出しました（勤務可${counts.ok}・夜勤${counts.night}・休み${counts.off}）。現場のシフト作成に反映されます。`)
+    void submitHope({ staffNo: staff.no, name: staff.name, site, ym, days, note, submittedAt: ym })
+      .then(() => setSubmitted(`${ym} の希望を提出しました（勤務可${counts.ok}・夜勤${counts.night}・休み${counts.off}）。現場のシフト作成に反映されます。`))
+      .catch(() => setSubmitted('提出に失敗しました。通信状況をご確認ください。'))
   }
 
   return (
