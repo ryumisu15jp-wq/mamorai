@@ -2,7 +2,7 @@
 // セル=勤務区分コード。クリックで区分を巡回入力（＝シフト登録）。曜日ヘッダ＋日別体制(出勤数)を集計。
 // 区分は現場で追加・調整できる想定（既定コードを持つ）。
 import { useEffect, useMemo, useState } from 'react'
-import { activeStaff, subscribe as subStaff } from '../../shared/staffStore.js'
+import { listStaff as apiListStaff, subscribe as subStaff } from '../staff/staffApi.js'
 import { hopesForMonth, subscribe as subHope } from '../../shared/shiftHopeStore.js'
 import { saveShift } from '../../shared/shiftStore.js'
 
@@ -27,8 +27,7 @@ const codeOf = (k: string): Code => CODES.find((c) => c.key === k) ?? CODES[0]!
 const DOW = ['日', '月', '火', '水', '木', '金', '土']
 
 interface Staff { id: string; name: string; emp: string }
-// 名簿は勤務員登録(staffStore)と共通。id=スタッフNo（シフト希望と突合）。
-const toRoster = (): Staff[] => activeStaff().map((s) => ({ id: s.no, name: s.name, emp: s.role }))
+const ROT = ['責', '日B', '日C', '明', '休', '夜A', '当', '明', '休', '日C']
 
 function daysInMonth(month: string): { date: string; day: number; dow: number }[] {
   const [y, m] = month.split('-').map(Number)
@@ -43,10 +42,9 @@ function daysInMonth(month: string): { date: string; day: number; dow: number }[
 
 // 決定論的なデモ初期シフト（責/日勤ローテ＋夜勤＋当務＋休み）。乱数不使用。
 function seedGrid(staff: Staff[], days: { day: number }[]): Record<string, string[]> {
-  const rot = ['責', '日B', '日C', '明', '休', '夜A', '当', '明', '休', '日C']
   const g: Record<string, string[]> = {}
   staff.forEach((s, si) => {
-    g[s.id] = days.map((d) => rot[(d.day + si * 3) % rot.length]!)
+    g[s.id] = days.map((d) => ROT[(d.day + si * 3) % ROT.length]!)
   })
   return g
 }
@@ -54,18 +52,19 @@ function seedGrid(staff: Staff[], days: { day: number }[]): Record<string, strin
 export function ShiftMonth(): JSX.Element {
   const [month, setMonth] = useState('2026-09')
   const days = useMemo(() => daysInMonth(month), [month])
-  const [roster, setRoster] = useState<Staff[]>(() => toRoster())
-  const [grid, setGrid] = useState<Record<string, string[]>>(() => seedGrid(toRoster(), days))
+  const [roster, setRoster] = useState<Staff[]>([])
+  const [grid, setGrid] = useState<Record<string, string[]>>({})
   const [toast, setToast] = useState<string | null>(null)
   // 勤務員PWAから提出されたシフト希望（対象月）。
   const [hopeCount, setHopeCount] = useState<number>(() => hopesForMonth(month).length)
   useEffect(() => subHope(() => setHopeCount(hopesForMonth(month).length)), [month])
-  // 勤務員登録(staffStore)の変更を名簿に反映。新規登録者は空欄行を追加。
-  useEffect(() => subStaff(() => setRoster(toRoster())), [])
+  // 名簿(勤務員登録)の変更を反映。新規登録者は既定ローテで行追加。
+  const loadRoster = (): void => { void apiListStaff().then((list) => setRoster(list.filter((s) => s.active).map((s) => ({ id: s.no, name: s.name, emp: s.role })))) }
+  useEffect(() => { loadRoster(); return subStaff(loadRoster) }, [])
   useEffect(() => {
     setGrid((p) => {
       const g = { ...p }
-      roster.forEach((s) => { if (!g[s.id]) g[s.id] = days.map(() => '') })
+      roster.forEach((s, si) => { if (!g[s.id]) g[s.id] = days.map((d) => ROT[(d.day + si * 3) % ROT.length]!) })
       return g
     })
   }, [roster, days])

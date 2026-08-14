@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MAMOR-AI 本番運用 手順書</title>
+<style>
+  :root{--navy:#0f1c34;--navy2:#16274a;--pri:#1746a2;--ink:#1a2230;--muted:#5b6675;--line:#e3e7ee;--bg:#f6f8fc;--card:#fff;--ok:#127a3e;--okbg:#e6f5ec;--warnbg:#fbf3dd;--warn:#8a6d00;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.75;font-size:14.5px}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 22px}
+  header.cover{background:linear-gradient(160deg,var(--navy),var(--navy2));color:#fff;padding:44px 0 34px;margin-bottom:8px}
+  header.cover .wrap{display:flex;flex-direction:column;gap:6px}
+  .cover .badge{align-self:flex-start;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:.08em}
+  .cover h1{font-size:28px;font-weight:800}.cover h1 b{color:#8ec5ff}
+  .cover p{color:#c7d2e6;max-width:760px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px 26px;margin:14px 0}
+  h2.sec{font-size:19px;font-weight:800;color:var(--navy);padding-bottom:8px;border-bottom:3px solid var(--pri);margin-bottom:14px}
+  h2.sec .n{color:var(--pri);font-size:14px;margin-right:8px}
+  h3{font-size:15.5px;font-weight:700;margin:16px 0 6px;color:var(--navy2)}
+  p{margin:7px 0}ul,ol{margin:7px 0 7px 22px}li{margin:4px 0}
+  code{background:#eef1f6;padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace;color:#243}
+  pre{background:#0f1c34;color:#e8eefb;border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:12.5px;margin:8px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#eef2f8;font-weight:700;color:var(--navy2)}
+  tbody tr:nth-child(even){background:#fafbfe}
+  .mermaid{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0;text-align:center;overflow-x:auto}
+  .callout{border-left:4px solid var(--pri);background:#f0f4fb;border-radius:0 10px 10px 0;padding:11px 15px;margin:10px 0}
+  .ok{border-left-color:var(--ok);background:var(--okbg)}
+  .warn{border-left-color:var(--warn);background:var(--warnbg)}
+  .step{display:flex;gap:12px;margin:14px 0;align-items:flex-start}
+  .step .no{flex:0 0 34px;height:34px;border-radius:50%;background:var(--pri);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .step .body{flex:1}
+  .who{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px}
+  .who-you{background:#e8eefb;color:#2f5bd0}.who-me{background:#e6f5ec;color:#127a3e}
+  .done{display:inline-block;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700;background:var(--okbg);color:var(--ok);margin-left:6px}
+  footer{color:var(--muted);text-align:center;font-size:13px;padding:22px 0 46px}
+  @media print{body{background:#fff}section{break-inside:avoid}pre{background:#0f1c34}}
+</style>
+</head>
+<body>
+<header class="cover">
+  <div class="wrap">
+    <span class="badge">OPERATIONS RUNBOOK</span>
+    <h1>MAMOR<b>-AI</b> 本番運用 手順書</h1>
+    <p>ブルガリホテル東京パイロットを本番稼働させるための手順。DB適用 → 運営アカウント → 初期データ投入 → 各ログイン確認 → フロント本結線 → 運用開始 まで。
+       <span class="done">凡例</span> <span class="who who-you">お客様</span>=あなたの操作 / <span class="who who-me">開発</span>=こちらで実装。</p>
+  </div>
+</header>
+<div class="wrap">
+
+<section>
+  <h2 class="sec"><span class="n">01</span>現在の状態</h2>
+  <ul>
+    <li>本番DB（Supabase）に <code>0400</code>（会社オンボーディング＋各機能テーブル＋RLS＋発行RPC）と <code>0401</code>（勤務員PIN運用）を適用済み。<span class="done">完了</span></li>
+    <li>アプリ（4コンソール＋勤務員PWA）は本番 <code>mamorai.tryangrow.com</code> に配信済み。勤務員PWAのPIN運用（初期PIN=生年月日／初回変更強制）も反映済み。<span class="done">完了</span></li>
+    <li>ただし各画面のデータは現時点ではブラウザ内（localStorage）で動作。端末間共有・恒久保存にはフロントのSupabase結線（後述Step 6）が必要。</li>
+  </ul>
+</section>
+
+<section>
+  <h2 class="sec"><span class="n">02</span>全体の流れ</h2>
+  <div class="mermaid"><svg id="r0" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-width: 942.455078125px;" viewBox="-8 -8 942.455078125 69" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#r0{font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;fill:#1a2230;}#r0 .error-icon{fill:hsl(36, 41.6666666667%, 100%);}#r0 .error-text{fill:#000000;stroke:#000000;}#r0 .edge-thickness-normal{stroke-width:2px;}#r0 .edge-thickness-thick{stroke-width:3.5px;}#r0 .edge-pattern-solid{stroke-dasharray:0;}#r0 .edge-pattern-dashed{stroke-dasharray:3;}#r0 .edge-pattern-dotted{stroke-dasharray:2;}#r0 .marker{fill:#5b6675;stroke:#5b6675;}#r0 .marker.cross{stroke:#5b6675;}#r0 svg{font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;}#r0 .label{font-family:'Hiragino Kaku Gothic ProN',sans-serif;color:#1a2230;}#r0 .cluster-label text{fill:#000000;}#r0 .cluster-label span,#r0 p{color:#000000;}#r0 .label text,#r0 span,#r0 p{fill:#1a2230;color:#1a2230;}#r0 .node rect,#r0 .node circle,#r0 .node ellipse,#r0 .node polygon,#r0 .node path{fill:#eef2f8;stroke:#1746a2;stroke-width:1px;}#r0 .flowchart-label text{text-anchor:middle;}#r0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#r0 .node .label{text-align:center;}#r0 .node.clickable{cursor:pointer;}#r0 .arrowheadPath{fill:#0b0b0b;}#r0 .edgePath .path{stroke:#5b6675;stroke-width:2.0px;}#r0 .flowchart-link{stroke:#5b6675;fill:none;}#r0 .edgeLabel{background-color:hsl(96, 41.6666666667%, 95.2941176471%);text-align:center;}#r0 .edgeLabel rect{opacity:0.5;background-color:hsl(96, 41.6666666667%, 95.2941176471%);fill:hsl(96, 41.6666666667%, 95.2941176471%);}#r0 .labelBkg{background-color:rgba(242.0000000001, 248.0000000001, 238.0000000001, 0.5);}#r0 .cluster rect{fill:hsl(36, 41.6666666667%, 100%);stroke:hsl(36, 1.6666666667%, 90%);stroke-width:1px;}#r0 .cluster text{fill:#000000;}#r0 .cluster span,#r0 p{color:#000000;}#r0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;background:hsl(36, 41.6666666667%, 100%);border:1px solid hsl(36, 1.6666666667%, 90%);border-radius:2px;pointer-events:none;z-index:100;}#r0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1a2230;}#r0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="r0_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="r0_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="r0_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="r0_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="r0_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="r0_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M79.721,26.5L83.887,26.5C88.054,26.5,96.387,26.5,103.837,26.5C111.287,26.5,117.854,26.5,121.137,26.5L124.421,26.5" id="L-A-B-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-B" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path><path d="M230.127,26.5L234.294,26.5C238.46,26.5,246.794,26.5,254.244,26.5C261.694,26.5,268.26,26.5,271.544,26.5L274.827,26.5" id="L-B-C-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-B LE-C" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path><path d="M385.799,26.5L389.965,26.5C394.132,26.5,402.465,26.5,409.915,26.5C417.365,26.5,423.932,26.5,427.215,26.5L430.499,26.5" id="L-C-D-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C LE-D" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path><path d="M536.205,26.5L540.372,26.5C544.538,26.5,552.872,26.5,560.322,26.5C567.772,26.5,574.338,26.5,577.622,26.5L580.905,26.5" id="L-D-E-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-D LE-E" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path><path d="M662.33,26.5L666.497,26.5C670.663,26.5,678.997,26.5,686.447,26.5C693.897,26.5,700.463,26.5,703.747,26.5L707.03,26.5" id="L-E-F-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-F" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path><path d="M812.455,26.5L816.622,26.5C820.788,26.5,829.122,26.5,836.572,26.5C844.022,26.5,850.588,26.5,853.872,26.5L857.155,26.5" id="L-F-G-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-F LE-G" style="fill:none;" marker-end="url(#r0_flowchart-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"></tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A-0" data-node="true" data-id="A" transform="translate(39.8603515625, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-39.8603515625" y="-26.5" width="79.720703125" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step1</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">DB適用</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">(0400/0401)</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-B-1" data-node="true" data-id="B" transform="translate(179.923828125, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-50.203125" y="-26.5" width="100.40625" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step2</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">運営アカウント</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">作成</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C-3" data-node="true" data-id="C" transform="translate(332.962890625, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-52.8359375" y="-26.5" width="105.671875" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step3</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">初期データ投入</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">会社/現場/勤務員</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-D-5" data-node="true" data-id="D" transform="translate(486.001953125, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-50.203125" y="-26.5" width="100.40625" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step4</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">会社管理者</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">アカウント作成</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-E-7" data-node="true" data-id="E" transform="translate(624.267578125, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-38.0625" y="-26.5" width="76.125" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step5</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">各ログイン</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">動作確認</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-F-9" data-node="true" data-id="F" transform="translate(762.392578125, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-50.0625" y="-26.5" width="100.125" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step6</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">フロント本結線</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">(開発)</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-G-11" data-node="true" data-id="G" transform="translate(894.455078125, 26.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-32" y="-26.5" width="64" height="53"></rect><g class="label" style="" transform="translate(0, -19)"><rect></rect><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Step7</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">本番運用</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">開始</tspan></text></g></g></g></g></g></svg></div>
+  <p>Step1〜5はデータを用意して「入口が動く」状態にする作業（大半はこちらで用意したSQLを貼るだけ）。Step6でアプリの各画面を実データに結線し、Step7で正式運用に切り替えます。</p>
+</section>
+
+<section>
+  <h2 class="sec"><span class="n">03</span>手順（ステップ別）</h2>
+
+  <div class="step"><div class="no">1</div><div class="body">
+    <h3>DB適用 <span class="done">完了</span></h3>
+    <p>Supabase → SQL Editor で <code>0400_production_onboarding.sql</code> → <code>0401_pin_recovery.sql</code> の順に実行済み。「Success. No rows returned」で正常です。</p>
+  </div></div>
+
+  <div class="step"><div class="no">2</div><div class="body">
+    <h3>運営(/tradmin)アカウント作成 <span class="who who-you">お客様</span></h3>
+    <ol>
+      <li>Supabase → Authentication → Users → <b>Add user</b> で運営用のメール＋パスワードを作成（例 <code>admin@tryangrow.com</code>）。</li>
+      <li>SQL Editor で <code>set_platform_admin.sql</code>（メール部分を①のアドレスに変更）を実行し、<code>platform_admin</code> を付与。</li>
+      <li><code>mamorai.tryangrow.com/tradmin</code> にメール＋パスワードでログインできることを確認。</li>
+    </ol>
+  </div></div>
+
+  <div class="step"><div class="no">3</div><div class="body">
+    <h3>初期データ投入（会社／現場／勤務員） <span class="who who-you">お客様</span></h3>
+    <p>SQL Editor で <code>seed_bulgari.sql</code> を実行。これだけで下記が作成されます（冪等・再実行OK）。</p>
+    <ul>
+      <li>会社：ヒトトヒト株式会社（<code>HTH-0001</code>）</li>
+      <li>現場：ブルガリホテル東京（<code>BVL-01</code>）／現場PIN <code>1234</code></li>
+      <li>勤務員6名：初期PIN＝生年月日の月日（例 三角=0412／藤井=0903／大野=1220／中村=0608／小林=0227／渡辺=1115）、全員「初回変更要」</li>
+    </ul>
+  </div></div>
+
+  <div class="step"><div class="no">4</div><div class="body">
+    <h3>会社(/co)管理者アカウント作成 <span class="who who-you">お客様</span></h3>
+    <ol>
+      <li>Authentication → Users → Add user で会社管理者のメール＋パスワードを作成。</li>
+      <li><code>seed_bulgari.sql</code> 末尾のコメント（会社管理者紐付け）のメールを②に変更し、その5行を実行して <code>company_admin</code>＋会社を付与。</li>
+      <li><code>/co</code> にログイン → 自社（ヒトトヒト）のデータのみ見えることを確認。</li>
+    </ol>
+  </div></div>
+
+  <div class="step"><div class="no">5</div><div class="body">
+    <h3>各ログインの動作確認 <span class="who who-you">お客様</span></h3>
+    <p>下の早見表のとおり4系統でログインし、勤務員は初回PIN変更まで確認します（<a>詳細は次章</a>）。</p>
+  </div></div>
+
+  <div class="step"><div class="no">6</div><div class="body">
+    <h3>フロント本結線（各画面をSupabaseへ） <span class="who who-me">開発</span></h3>
+    <p>現在localStorageで動く各画面（有給・シフト希望・講習会・日報取込・勤務員登録・シフト作成・配置）を、Supabaseの実テーブル／RPCへ順に置き換えます。現場・勤務員の業務RPC（提出／承認／一覧）を <code>0402</code> として追加し、画面ごとにバインド→本番検証→切替します。ここはこちらで実装し、都度zipでお渡しします。</p>
+  </div></div>
+
+  <div class="step"><div class="no">7</div><div class="body">
+    <h3>本番運用開始 <span class="who who-you">お客様</span> <span class="who who-me">開発</span></h3>
+    <p>端末間反映・RLS分離・帳票出力を実データで確認し、デモ（localStorage）から本番へ切替。以降は会社が自社で現場・勤務員を追加できます。</p>
+  </div></div>
+</section>
+
+<section>
+  <h2 class="sec"><span class="n">04</span>各ログイン早見表（パイロット）</h2>
+  <table>
+    <thead><tr><th>系統</th><th>URL</th><th>ログイン情報</th></tr></thead>
+    <tbody>
+      <tr><td>運営</td><td><code>/tradmin</code></td><td>Step2で作成したメール＋パスワード</td></tr>
+      <tr><td>会社</td><td><code>/co</code></td><td>Step4で作成したメール＋パスワード</td></tr>
+      <tr><td>現場</td><td><code>/s</code></td><td>会社識別コード <code>HTH-0001</code>／施設コード <code>BVL-01</code>／現場PIN <code>1234</code></td></tr>
+      <tr><td>勤務員</td><td><code>/app</code></td><td>会社識別コード <code>HTH-0001</code>（将来）／スタッフNo（例 783）／初期PIN=生年月日MMDD（例 0412）→ 初回変更</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><b>注意。</b> 現時点のアプリ画面はまだlocalStorageで動作中のため、上記の「実データでのログイン（Supabase照合）」はStep6の結線後に有効化されます。それまでは現行のデモ入力で動作します。DBとSQLは先に整えておき、Step6で切り替える流れです。</div>
+</section>
+
+<section>
+  <h2 class="sec"><span class="n">05</span>役割分担</h2>
+  <table>
+    <thead><tr><th>担当</th><th>作業</th></tr></thead>
+    <tbody>
+      <tr><td><span class="who who-you">お客様</span></td><td>Supabaseダッシュボードでのユーザー作成（運営・会社管理者）、こちらが用意したSQL（set_platform_admin / seed_bulgari）の実行、各ログインの動作確認、zipのpush。</td></tr>
+      <tr><td><span class="who who-me">開発</span></td><td>SQL・RPC・画面の実装と検証、フロントのSupabase結線（Step6）、各段階のソースzip提供、本番反映後の確認。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 class="sec"><span class="n">06</span>セキュリティ・運用の注意</h2>
+  <ul>
+    <li><b>service_role キー</b>はサーバ環境変数のみに置き、クライアントやチャットに貼らない（会社管理者のAuthユーザー作成に使用）。</li>
+    <li>以前チャットに出た <b>GitHubトークン</b>は未実施であれば無効化・再発行を推奨。</li>
+    <li>勤務員PINは現場での復旧用に現在値を保持（4桁の利便用PIN想定）。より厳格運用が必要なら暗号化方式へ差替可能。</li>
+    <li>本番切替前に Supabase の <b>バックアップ／PITR</b> 設定を確認。</li>
+  </ul>
+</section>
+
+<footer>© 2026 TRYANGROW — MAMOR-AI 本番運用 手順書 v1.0 ／ 付属SQL: 0400 / 0401 / set_platform_admin / seed_bulgari（いずれも実PostgreSQLで検証済み）。</footer>
+</div>
+</body>
+</html>

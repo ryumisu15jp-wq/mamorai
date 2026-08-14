@@ -3,27 +3,28 @@
 import { useEffect, useMemo, useState } from 'react'
 import { STAFF, siteManager } from '../../pilot/bulgari.js'
 import { buildSealSvg, buildSignatureSvg } from '../../lib/sealSignature.js'
-import { listLeave, approveSite, rejectLeave, subscribe, type LeaveReq } from '../../shared/leaveStore.js'
+import { listForSite, approveSite, rejectAtSite, subscribe, type LeaveReq } from './leaveApi.js'
 
 const today = '2026-09-15' // 決定論の当日値（本結線時はサーバ日付）
 
 export function LeaveSiteApproval(): JSX.Element {
-  const [rows, setRows] = useState<LeaveReq[]>(() => listLeave())
+  const [rows, setRows] = useState<LeaveReq[]>([])
   const [approver, setApprover] = useState<string>(() => siteManager().name)
   const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => subscribe(() => setRows(listLeave())), [])
+  const load = (): void => { void listForSite().then(setRows) }
+  useEffect(() => { load(); return subscribe(load) }, [])
 
   const pending = rows.filter((r) => r.status === '申請中')
   const seal = useMemo(() => buildSealSvg(approver, 46), [approver])
   const sig = useMemo(() => buildSignatureSvg(approver, 110, 22), [approver])
 
   const approve = (r: LeaveReq): void => {
-    approveSite(r.id, { name: approver, title: '現場責任者', date: today })
-    setToast(`${r.name} さんの申請を承認し、会社へ送信しました`)
+    void approveSite(r.id, { name: approver, title: '現場責任者', date: today })
+      .then(() => { load(); setToast(`${r.name} さんの申請を承認し、会社へ送信しました`) })
+      .catch((e: unknown) => setToast(e instanceof Error ? e.message : '承認に失敗しました'))
   }
   const reject = (r: LeaveReq): void => {
-    rejectLeave(r.id, `現場(${approver})`)
-    setToast(`${r.name} さんの申請を却下しました`)
+    void rejectAtSite(r.id, `現場(${approver})`).then(() => { load(); setToast(`${r.name} さんの申請を却下しました`) })
   }
 
   return (

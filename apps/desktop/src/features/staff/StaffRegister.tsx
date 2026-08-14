@@ -2,28 +2,52 @@
 // 登録した勤務員は、講習会申込の自動反映や有給申請書の氏名などに用いられる（本結線時はDB）。
 import { useEffect, useState } from 'react'
 import { SITE, COMPANY, type PilotStaff } from '../../pilot/bulgari.js'
-import { listStaff, upsertStaff, setActive, resetPinToDob, subscribe } from '../../shared/staffStore.js'
+import { listStaff, upsertStaff, setActive, resetPin, bulkUpsert, subscribe } from './staffApi.js'
+import { parseStaffFile, staffTemplateRows } from '../../lib/staffParser.js'
+import { downloadCsv } from '../../lib/csv.js'
 
 type Row = PilotStaff
 const ROLES: Row['role'][] = ['現場責任者', '副責任者', '隊員']
 
 export function StaffRegister(): JSX.Element {
-  const [rows, setRows] = useState<Row[]>(() => listStaff())
+  const [rows, setRows] = useState<Row[]>([])
   const [form, setForm] = useState<Row>({ no: '', name: '', dob: '', dept: SITE.dept, site: SITE.name, role: '隊員', active: true })
   const [editing, setEditing] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => subscribe(() => setRows(listStaff())), [])
+  const load = (): void => { void listStaff().then(setRows) }
+  useEffect(() => { load(); return subscribe(load) }, [])
 
   const reset = (): void => { setForm({ no: '', name: '', dob: '', dept: SITE.dept, site: SITE.name, role: '隊員', active: true }); setEditing(null) }
 
   const save = (): void => {
     if (form.no.trim() === '' || form.name.trim() === '') { setToast('スタッフNoと氏名は必須です'); return }
-    upsertStaff({ ...form, no: form.no.trim() })
-    setToast(`${form.name}（No.${form.no}）を${editing !== null ? '更新' : '登録'}しました`)
-    reset()
+    void upsertStaff({ ...form, no: form.no.trim() })
+      .then(() => { load(); setToast(`${form.name}（No.${form.no}）を${editing !== null ? '更新' : '登録'}しました`); reset() })
+      .catch((e: unknown) => setToast(e instanceof Error ? e.message : '登録に失敗しました'))
   }
   const edit = (r: Row): void => { setForm({ ...r }); setEditing(r.no) }
-  const toggle = (no: string): void => { const r = rows.find((x) => x.no === no); if (r) setActive(no, !r.active) }
+  const toggle = (no: string): void => { const r = rows.find((x) => x.no === no); if (r) void setActive(no, !r.active).then(load) }
+
+  // Excel/CSV 一括取込
+  const [preview, setPreview] = useState<Row[] | null>(null)
+  const [warn, setWarn] = useState<string[]>([])
+  const onFile = async (file: File | undefined): Promise<void> => {
+    if (!file) return
+    setPreview(null); setWarn([])
+    try {
+      const { rows: parsed, warnings } = parseStaffFile(await file.arrayBuffer())
+      setPreview(parsed); setWarn(warnings)
+      setToast(`${parsed.length} 名を読み込みました。内容を確認して取込してください。`)
+    } catch (e) { setToast(e instanceof Error ? e.message : '取込に失敗しました') }
+  }
+  const commitImport = (): void => {
+    if (!preview) return
+    const n = preview.length
+    void bulkUpsert(preview)
+      .then(() => { load(); setToast(`${n} 名を登録しました（初期PINは生年月日）`); setPreview(null); setWarn([]) })
+      .catch((e: unknown) => setToast(e instanceof Error ? e.message : '取込に失敗しました'))
+  }
+  const downloadTemplate = (): void => { downloadCsv('隊員登録テンプレート.csv', staffTemplateRows()) }
 
   return (
     <div className="page">
@@ -50,6 +74,39 @@ export function StaffRegister(): JSX.Element {
         </div>
       </section>
 
+      <section className="card" aria-label="Excel/CSV一括取込">
+        <div className="card-h"><h2>Excel / CSV で一括登録</h2>
+          <button type="button" className="btn-sm" style={{ marginLeft: 'auto' }} onClick={downloadTemplate}>テンプレートDL(CSV)</button>
+        </div>
+        <div className="card-b">
+          <div className="filters">
+            <label className="fl">ファイル(.xlsx/.xlsm/.csv)
+              <input className="input" type="file" accept=".xlsx,.xlsm,.csv" onChange={(e) => void onFile(e.target.files?.[0])} />
+            </label>
+          </div>
+          <p className="muted">列: スタッフNo／氏名／生年月日／部署／役割／所属現場（スタッフNo・氏名は必須。表記ゆれ可）。初期PINは生年月日から自動生成されます。</p>
+          {warn.length > 0 && <p className="muted" style={{ color: '#b8860b' }}>注意: {warn.slice(0, 4).join(' / ')}{warn.length > 4 ? ` ほか${warn.length - 4}件` : ''}</p>}
+          {preview && (
+            <div className="card" style={{ marginTop: 10 }}>
+              <div className="card-h"><h2>プレビュー（{preview.length} 名）</h2>
+                <button type="button" className="btn btn-primary" style={{ marginLeft: 'auto' }} onClick={commitImport}>この内容で取込</button>
+              </div>
+              <div className="card-b" style={{ padding: 0 }}>
+                <table className="tbl">
+                  <thead><tr><th>No.</th><th>氏名</th><th>生年月日</th><th>役割</th><th>部署</th><th>初期PIN</th></tr></thead>
+                  <tbody>
+                    {preview.slice(0, 20).map((r) => (
+                      <tr key={r.no}><td>{r.no}</td><td>{r.name}</td><td>{r.dob || '—'}</td><td>{r.role}</td><td>{r.dept}</td><td>{r.dob ? `${r.dob.slice(5, 7)}${r.dob.slice(8, 10)}` : '—'}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+                {preview.length > 20 && <p className="muted" style={{ padding: '8px 12px' }}>ほか {preview.length - 20} 名</p>}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section className="card" aria-label="勤務員一覧">
         <div className="card-h"><h2>勤務員一覧</h2><span className="muted">在籍 {rows.filter((r) => r.active).length} 名 / 全 {rows.length} 名 ／ PINは復旧用に表示</span></div>
         <div className="card-b">
@@ -65,7 +122,7 @@ export function StaffRegister(): JSX.Element {
                   <td>
                     <span className="row-actions" style={{ gap: 6 }}>
                       <button type="button" className="btn-sm" onClick={() => edit(r)}>編集</button>
-                      <button type="button" className="btn-sm" onClick={() => { const p = resetPinToDob(r.no); setToast(`${r.name} のPINを初期値(${p})にリセットしました`) }}>PIN初期化</button>
+                      <button type="button" className="btn-sm" onClick={() => { void resetPin(r.no).then((p) => { load(); setToast(`${r.name} のPINを初期値(${p})にリセットしました`) }) }}>PIN初期化</button>
                       <button type="button" className="btn-sm btn-reject" onClick={() => toggle(r.no)}>{r.active ? '休止' : '復帰'}</button>
                     </span>
                   </td>

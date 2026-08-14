@@ -29,6 +29,7 @@ import { SecurityCheck } from './features/platform/SecurityCheck.js'
 import { PlatformNotice } from './features/platform/PlatformNotice.js'
 import { demoConstraints } from './features/shift/demoShift.js'
 import { capabilitiesForRole, type Capability, type ConstraintDef } from '@mamorai/input-core'
+import { setSiteCodes } from './shared/runtimeCtx.js'
 import type { Session } from './features/auth/authTypes.js'
 
 // MAMOR-AI デスクトップ MVP のシェル。
@@ -82,6 +83,8 @@ const TABS: { key: Tab; label: string; cap: Capability }[] = [
 export function App({ session, onLogout }: { session?: Session; onLogout?: () => void } = {}): JSX.Element {
   // ロール未指定（直接起動）は本社管理者相当で全機能表示（開発時の後方互換）。
   const role = session?.role ?? 'company_admin'
+  // 現場ログインの実コードを各API(staff/leave)のRPCスコープに反映。
+  useMemo(() => setSiteCodes(session?.companyCode, session?.siteCode), [session?.companyCode, session?.siteCode])
   const caps = useMemo(() => new Set(capabilitiesForRole(role)), [role])
   const tabs = useMemo(() => TABS.filter((t) => caps.has(t.cap)), [caps])
 

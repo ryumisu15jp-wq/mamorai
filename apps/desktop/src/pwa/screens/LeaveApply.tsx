@@ -2,8 +2,7 @@
 // 承認状況（現場承認/会社承認/却下）はこの画面にも反映される。
 import { useEffect, useState } from 'react'
 import type { Staff } from '../staff.js'
-import { COMPANY } from '../../pilot/bulgari.js'
-import { submitLeave, listLeaveForStaff, subscribe, type LeaveReq } from '../../shared/leaveStore.js'
+import { submitLeave, listForStaff, subscribe, type LeaveReq } from '../../features/leave/leaveApi.js'
 
 function diffDays(from: string, to: string): number {
   if (from === '' || to === '') return 1
@@ -16,22 +15,19 @@ export function LeaveApply({ staff, site }: { staff: Staff; site: string }): JSX
   const [from, setFrom] = useState('2026-09-01')
   const [to, setTo] = useState('2026-09-01')
   const [reason, setReason] = useState('')
-  const [rows, setRows] = useState<LeaveReq[]>(() => listLeaveForStaff(staff.no))
+  const [rows, setRows] = useState<LeaveReq[]>([])
   const [toast, setToast] = useState<string | null>(null)
 
-  useEffect(() => subscribe(() => setRows(listLeaveForStaff(staff.no))), [staff.no])
+  const load = (): void => { void listForStaff(staff.no).then(setRows) }
+  useEffect(() => { load(); return subscribe(load) }, [staff.no])
 
   const remaining = 20 - rows.filter((r) => r.status !== '却下').reduce((s, r) => s + r.days, 0)
 
   const submit = (): void => {
     if (from === '' || to === '') { setToast('日付を入力してください'); return }
-    submitLeave({
-      staffNo: staff.no, name: staff.name, company: COMPANY.name, dept: staff.dept, site,
-      from, to, days: diffDays(from, to), reason: reason || '私用の為',
-    })
-    setRows(listLeaveForStaff(staff.no))
-    setReason('')
-    setToast('有給を申請しました（現場・会社の承認待ち）')
+    void submitLeave({ staffNo: staff.no, name: staff.name, dept: staff.dept, from, to, days: diffDays(from, to), reason: reason || '私用の為' })
+      .then(() => { load(); setReason(''); setToast('有給を申請しました（現場・会社の承認待ち）') })
+      .catch((e: unknown) => setToast(e instanceof Error ? e.message : '申請に失敗しました'))
   }
 
   return (

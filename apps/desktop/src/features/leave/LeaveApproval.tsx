@@ -4,15 +4,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { COMPANY_APPROVERS } from '../../pilot/bulgari.js'
 import { buildSealSvg, buildSignatureSvg } from '../../lib/sealSignature.js'
 import { printLeaveForm, type LeaveForm } from './leaveForm.js'
-import { listLeave, approveCompany, rejectLeave, subscribe, type LeaveReq } from '../../shared/leaveStore.js'
+import { listForCompany, approveCompany, rejectAtCompany, subscribe, type LeaveReq } from './leaveApi.js'
 
 const today = '2026-09-16'
 
 export function LeaveApproval(): JSX.Element {
-  const [rows, setRows] = useState<LeaveReq[]>(() => listLeave())
+  const [rows, setRows] = useState<LeaveReq[]>([])
   const [approverName, setApproverName] = useState<string>(() => COMPANY_APPROVERS[0]!.name)
   const [toast, setToast] = useState<string | null>(null)
-  useEffect(() => subscribe(() => setRows(listLeave())), [])
+  const load = (): void => { void listForCompany().then(setRows) }
+  useEffect(() => { load(); return subscribe(load) }, [])
 
   const approver = COMPANY_APPROVERS.find((a) => a.name === approverName) ?? COMPANY_APPROVERS[0]!
   const seal = useMemo(() => buildSealSvg(approver.name, 46), [approver])
@@ -28,15 +29,16 @@ export function LeaveApproval(): JSX.Element {
 
   const approveAndOutput = (r: LeaveReq): void => {
     const ca = { name: approver.name, title: approver.title, date: today }
-    approveCompany(r.id, ca)
-    if (!printLeaveForm(toForm({ ...r, status: '会社承認', companyApprover: ca }))) {
-      setToast('ポップアップがブロックされました。許可してください。')
-    } else {
-      setToast(`${r.name} さんの申請を承認し、有給休暇申請書(A5)を出力しました`)
-    }
+    void approveCompany(r.id, ca)
+      .then(() => {
+        load()
+        if (!printLeaveForm(toForm({ ...r, status: '会社承認', companyApprover: ca }))) setToast('ポップアップがブロックされました。許可してください。')
+        else setToast(`${r.name} さんの申請を承認し、有給休暇申請書(A5)を出力しました`)
+      })
+      .catch((e: unknown) => setToast(e instanceof Error ? e.message : '承認に失敗しました'))
   }
   const reOutput = (r: LeaveReq): void => { printLeaveForm(toForm(r)) }
-  const reject = (r: LeaveReq): void => { rejectLeave(r.id, `会社(${approver.title} ${approver.name})`); setToast(`${r.name} さんの申請を却下しました`) }
+  const reject = (r: LeaveReq): void => { void rejectAtCompany(r.id, `会社(${approver.title} ${approver.name})`).then(() => { load(); setToast(`${r.name} さんの申請を却下しました`) }) }
 
   return (
     <div className="page">

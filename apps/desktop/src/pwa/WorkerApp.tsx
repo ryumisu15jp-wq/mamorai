@@ -15,14 +15,15 @@ const TABS: { key: PwaTab; label: string; icon: string }[] = [
   { key: 'notice', label: 'お知らせ', icon: '🔔' },
 ]
 
-function StaffLogin({ onLogin }: { onLogin: (s: Staff) => void }): JSX.Element {
+function StaffLogin({ onLogin }: { onLogin: (s: Staff, pin: string) => void }): JSX.Element {
   const [no, setNo] = useState('')
   const [pin, setPin] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const submit = (): void => {
-    const s = signInStaff(no, pin)
-    if (s === null) { setErr('スタッフNoまたはPINが正しくありません'); return }
-    onLogin(s)
+    void signInStaff(no, pin).then((s) => {
+      if (s === null) { setErr('スタッフNoまたはPINが正しくありません'); return }
+      onLogin(s, pin)
+    }).catch(() => setErr('ログインに失敗しました'))
   }
   return (
     <div className="pwa-login">
@@ -44,15 +45,14 @@ function StaffLogin({ onLogin }: { onLogin: (s: Staff) => void }): JSX.Element {
 }
 
 // 初回ログイン時のPIN変更画面（変更するまで先へ進めない）。
-function PinChange({ staff, onDone }: { staff: Staff; onDone: () => void }): JSX.Element {
+function PinChange({ staff, oldPin, onDone }: { staff: Staff; oldPin: string; onDone: () => void }): JSX.Element {
   const [p1, setP1] = useState('')
   const [p2, setP2] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const submit = (): void => {
     if (!/^\d{4,8}$/.test(p1)) { setErr('PINは4〜8桁の数字です'); return }
     if (p1 !== p2) { setErr('確認用PINが一致しません'); return }
-    changeStaffPin(staff.no, p1)
-    onDone()
+    void changeStaffPin(staff.no, oldPin, p1).then(onDone).catch((e: unknown) => setErr(e instanceof Error ? e.message : 'PIN変更に失敗しました'))
   }
   return (
     <div className="pwa-login">
@@ -75,11 +75,12 @@ function PinChange({ staff, onDone }: { staff: Staff; onDone: () => void }): JSX
 
 export function WorkerApp(): JSX.Element {
   const [staff, setStaff] = useState<Staff | null>(null)
+  const [loginPin, setLoginPin] = useState('')
   const [tab, setTab] = useState<PwaTab>('hope')
   const [site, setSite] = useState<string>('')
 
-  if (staff === null) return <StaffLogin onLogin={(s) => { setStaff(s); setSite(s.sites[0] ?? '') }} />
-  if (staff.pinMustChange) return <PinChange staff={staff} onDone={() => setStaff({ ...staff, pinMustChange: false })} />
+  if (staff === null) return <StaffLogin onLogin={(s, pin) => { setStaff(s); setLoginPin(pin); setSite(s.sites[0] ?? '') }} />
+  if (staff.pinMustChange) return <PinChange staff={staff} oldPin={loginPin} onDone={() => setStaff({ ...staff, pinMustChange: false })} />
 
   return (
     <div className="pwa-shell">
