@@ -22,6 +22,14 @@ export interface PilotStaff {
   site: string        // 所属現場
   role: '現場責任者' | '副責任者' | '隊員'
   active: boolean
+  pin?: string           // 現在PIN（初期は生年月日 MMDD）。現場が復旧用に参照可。
+  pinMustChange?: boolean // 初回ログイン時に変更を強制
+}
+
+/** 生年月日(YYYY-MM-DD)から初期PIN(MMDD)を生成。 */
+export function pinFromDob(dob: string): string {
+  const [, m, d] = dob.split('-')
+  return (m && d) ? `${m}${d}` : '0000'
 }
 
 // ブルガリホテル東京 セキュリティ２グループ 勤務員マスタ（実運用の初期登録）。

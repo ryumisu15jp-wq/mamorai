@@ -1,6 +1,4 @@
--- =====================================================================
 -- 0400_production_onboarding.sql — 本番運用: 会社オンボーディング＋永続化＋RLS
--- =====================================================================
 -- 方針（マルチテナント）:
 --   運営(platform_admin) が「会社＋会社管理者アカウント」を発行し、
 --   会社(company_admin) が自社の「現場(施設コード/現場PIN)」と「勤務員(スタッフNo/PIN)」を作成する。
@@ -16,9 +14,30 @@
 --   ※ 会社管理者の Auth ユーザー作成は service_role（サーバ側）で行う。本SQLは
 --     プロフィール紐付け(app_profiles)と会社発行までを担う。
 -- Supabase 注意: pgcrypto は extensions スキーマ。crypt/gen_salt は extensions. で参照。
--- =====================================================================
 
 create extension if not exists pgcrypto with schema extensions;
+
+-- ── 0) 前提テーブル（未適用環境でも単体で通るよう最小定義を冪等作成。既存があればno-op）──
+create table if not exists public.sites (
+  id uuid primary key default gen_random_uuid(),
+  name text, code text, address text, is_active boolean default true,
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);
+create table if not exists public.staff (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid, name text, site_id uuid references public.sites(id),
+  role text, is_active boolean default true
+);
+create table if not exists public.app_profiles (
+  user_id uuid primary key,
+  role    text
+);
+create table if not exists public.app_site_credentials (
+  id uuid primary key default gen_random_uuid(),
+  company_code text, site_code text, pin_hash text,
+  site_id uuid, company_id uuid, site_name text,
+  created_at timestamptz default now()
+);
 
 -- ── 1) companies（会社）────────────────────────────────────────────
 create table if not exists public.companies (
@@ -288,7 +307,5 @@ grant execute on function public.company_create_site(text,text,text,text)       
 grant execute on function public.company_register_staff(text,text,date,text,text,uuid[],text) to authenticated;
 grant execute on function public.staff_login(text,text,text)                       to anon, authenticated;
 
--- =====================================================================
 -- 次段(0401): 現場/勤務員の業務RPC（submit/list/approve を site トークンで内部スコープ強制）、
 --             会社/運営コンソール画面のSupabaseバインド、既存 localStorage ストアの移行。
--- =====================================================================

@@ -1,23 +1,27 @@
-// [勤務員PWA] スタッフ（勤務員）マスタと簡易ログイン（デモ）。
-// 本結線時は Supabase(app_profiles/現場割当) + PIN/パスキーに置換。
+// [勤務員PWA] ログインは共有の勤務員マスタ(staffStore)を参照（現場登録と同一データ）。
+// 初期PINは生年月日(MMDD)。初回ログイン時に変更を強制（pinMustChange）。
+import { authStaff, changePin as storeChangePin, type Staff as StoreStaff } from '../shared/staffStore.js'
+
 export interface Staff {
   no: string
   name: string
-  dob: string          // 生年月日 YYYY-MM-DD
-  dept: string         // 所属（例: セキュリティサービス4）
-  sites: string[]      // 担当現場（複数可・担当外は含めない）
-  pin: string          // デモPIN（本番は保存しない）
+  dob: string
+  dept: string
+  sites: string[]         // 担当現場（PWA互換のため配列。ブルガリは単一現場）
+  pinMustChange?: boolean
 }
 
-export const STAFF: Record<string, Staff> = {
-  '783': { no: '783', name: '三角 龍彦', dob: '1985-04-12', dept: 'セキュリティサービス4', sites: ['ブルガリホテル東京(施設)', 'ららテラス立川(施設)'], pin: '1234' },
-  '812': { no: '812', name: '鈴木 花', dob: '1998-01-22', dept: 'セキュリティサービス4', sites: ['立川立飛(施設)'], pin: '1234' },
-  '655': { no: '655', name: '田中 誠', dob: '1979-11-05', dept: 'セキュリティサービス2', sites: ['ららテラス立川(施設)'], pin: '0000' },
+function toPwa(s: StoreStaff): Staff {
+  return { no: s.no, name: s.name, dob: s.dob, dept: s.dept, sites: [s.site], pinMustChange: s.pinMustChange }
 }
 
-/** スタッフNo + PIN でログイン。成功で Staff を返す。 */
+/** スタッフNo＋PINでログイン。 */
 export function signInStaff(no: string, pin: string): Staff | null {
-  const s = STAFF[no.trim()]
-  if (s && s.pin === pin.trim()) return s
-  return null
+  const s = authStaff(no, pin)
+  return s ? toPwa(s) : null
+}
+
+/** PIN変更（初回・任意）。要変更フラグを解除。 */
+export function changeStaffPin(no: string, newPin: string): void {
+  storeChangePin(no, newPin)
 }

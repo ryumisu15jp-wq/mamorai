@@ -2,7 +2,7 @@
 // 登録した勤務員は、講習会申込の自動反映や有給申請書の氏名などに用いられる（本結線時はDB）。
 import { useEffect, useState } from 'react'
 import { SITE, COMPANY, type PilotStaff } from '../../pilot/bulgari.js'
-import { listStaff, upsertStaff, setActive, subscribe } from '../../shared/staffStore.js'
+import { listStaff, upsertStaff, setActive, resetPinToDob, subscribe } from '../../shared/staffStore.js'
 
 type Row = PilotStaff
 const ROLES: Row['role'][] = ['現場責任者', '副責任者', '隊員']
@@ -51,20 +51,21 @@ export function StaffRegister(): JSX.Element {
       </section>
 
       <section className="card" aria-label="勤務員一覧">
-        <div className="card-h"><h2>勤務員一覧</h2><span className="muted">在籍 {rows.filter((r) => r.active).length} 名 / 全 {rows.length} 名</span></div>
+        <div className="card-h"><h2>勤務員一覧</h2><span className="muted">在籍 {rows.filter((r) => r.active).length} 名 / 全 {rows.length} 名 ／ PINは復旧用に表示</span></div>
         <div className="card-b">
           <table className="tbl">
-            <thead><tr><th>No.</th><th>氏名</th><th>生年月日</th><th>役割</th><th>所属</th><th>状態</th><th></th></tr></thead>
+            <thead><tr><th>No.</th><th>氏名</th><th>生年月日</th><th>役割</th><th>PIN</th><th>状態</th><th></th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.no} style={{ opacity: r.active ? 1 : 0.5 }}>
                   <td>{r.no}</td><td>{r.name}</td><td>{r.dob || '—'}</td>
                   <td><span className={`status ${r.role === '現場責任者' ? 'st-approved' : r.role === '副責任者' ? 'st-submitted' : 'st-draft'}`}>{r.role}</span></td>
-                  <td>{r.dept}</td>
+                  <td><b>{r.pin ?? '—'}</b>{r.pinMustChange ? <span className="status st-submitted" style={{ marginLeft: 6 }}>要変更</span> : null}</td>
                   <td>{r.active ? '在籍' : '休止'}</td>
                   <td>
                     <span className="row-actions" style={{ gap: 6 }}>
                       <button type="button" className="btn-sm" onClick={() => edit(r)}>編集</button>
+                      <button type="button" className="btn-sm" onClick={() => { const p = resetPinToDob(r.no); setToast(`${r.name} のPINを初期値(${p})にリセットしました`) }}>PIN初期化</button>
                       <button type="button" className="btn-sm btn-reject" onClick={() => toggle(r.no)}>{r.active ? '休止' : '復帰'}</button>
                     </span>
                   </td>
@@ -72,6 +73,7 @@ export function StaffRegister(): JSX.Element {
               ))}
             </tbody>
           </table>
+          <p className="muted" style={{ marginTop: 8 }}>※ 初期PINは生年月日の月日（MMDD）。勤務員は初回ログイン時に変更します。忘れた場合はここでPINを確認、または初期化できます。</p>
         </div>
       </section>
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
