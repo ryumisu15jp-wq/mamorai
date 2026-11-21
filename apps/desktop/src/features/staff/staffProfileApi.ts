@@ -3,13 +3,19 @@
 import { getSupabase, isSupabaseConfigured } from '../../lib/supabaseClient.js'
 import { siteRpc } from '../../shared/secureRpc.js'
 import type { Profile } from '../../pwa/profileApi.js'
+import type { RequestCategory } from '../../pwa/profileLogic.js'
 
 export type ProfileRealm = 'company' | 'site'
 export interface StaffListItem {
   staff_no: string; name: string; is_active: boolean; sites: string[]
-  has_profile: boolean; has_face: boolean; credential_count: number; expired_count: number; soon_count: number
+  has_profile: boolean; has_face: boolean; credential_count: number; expired_count: number; soon_count: number; pending_count?: number
 }
-export interface ViewLogItem { viewer_kind: 'hq' | 'site'; viewer: string | null; what: 'profile' | 'face' | 'credential'; viewed_at: string }
+/** 承認待ちの申請（本社PC・管理者・支店）。current は変更前の値。 */
+export interface PendingRequest {
+  id: string; staff_no: string; name: string; category: RequestCategory
+  payload: Record<string, unknown>; current: Record<string, unknown> | null; has_image: boolean; submitted_at: string
+}
+export interface ViewLogItem { viewer_kind: 'hq' | 'site'; viewer: string | null; what: 'profile' | 'face' | 'credential' | 'id_doc'; viewed_at: string }
 export interface ViewedImage { mime: string; base64: string }
 
 const NO_DB = '本番DBに接続していないため、個人情報は表示できません（デモ表示）'
@@ -44,4 +50,27 @@ export async function fetchStaffImage(realm: ProfileRealm, staffNo: string, kind
 export async function fetchViewLog(staffNo: string): Promise<ViewLogItem[]> {
   if (!isSupabaseConfigured()) throw new Error(NO_DB)
   return await companyRpc<ViewLogItem[]>('company_staff_view_log', { p_staff_no: staffNo })
+}
+
+export async function listPendingRequests(): Promise<PendingRequest[]> {
+  if (!isSupabaseConfigured()) throw new Error(NO_DB)
+  return await companyRpc<PendingRequest[]>('company_list_requests')
+}
+
+/** 申請に添えられた写真を見る（見たことが記録される）。 */
+export async function fetchRequestImage(id: string): Promise<ViewedImage | null> {
+  if (!isSupabaseConfigured()) throw new Error(NO_DB)
+  return await companyRpc<ViewedImage | null>('company_request_image', { p_id: id })
+}
+
+/** 承認または差し戻し（差し戻しは理由が必須）。 */
+export async function decideRequest(id: string, approve: boolean, note: string): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error(NO_DB)
+  await companyRpc('company_request_decide', { p_id: id, p_approve: approve, p_note: note.trim() === '' ? null : note.trim() })
+}
+
+/** 本人確認資料の写真（本社PC・管理者・支店だけ。現場PCは見られない）。 */
+export async function fetchIdDoc(staffNo: string, docType: string): Promise<ViewedImage | null> {
+  if (!isSupabaseConfigured()) throw new Error(NO_DB)
+  return await companyRpc<ViewedImage | null>('company_staff_id_doc', { p_staff_no: staffNo, p_doc_type: docType })
 }

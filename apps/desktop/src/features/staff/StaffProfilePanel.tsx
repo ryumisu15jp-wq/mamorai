@@ -1,12 +1,12 @@
 // [個人情報の閲覧] 勤務員1人分の基本情報・顔写真・資格／教育／健診の記録。
 // 開いた時点で「基本情報」と「顔写真」を見たことが記録される。証書の写真は「見る」を押したときだけ読み込む（記録も1件ずつ）。
 import { useEffect, useState } from 'react'
-import { fetchStaffProfile, fetchStaffImage, fetchViewLog, type ProfileRealm, type ViewLogItem } from './staffProfileApi.js'
+import { fetchStaffProfile, fetchStaffImage, fetchViewLog, fetchIdDoc, type ProfileRealm, type ViewLogItem } from './staffProfileApi.js'
 import type { Profile } from '../../pwa/profileApi.js'
-import { expiryStatus, kindLabel } from '../../pwa/profileLogic.js'
+import { CATEGORY_LABEL, STATUS_LABEL, docLabel, expiryStatus, kindLabel, summarizeRequest } from '../../pwa/profileLogic.js'
 
 const today = (): string => new Date().toLocaleDateString('sv-SE')
-const WHAT: Record<ViewLogItem['what'], string> = { profile: '基本情報', face: '顔写真', credential: '証書の写真' }
+const WHAT: Record<ViewLogItem['what'], string> = { profile: '基本情報', face: '顔写真', credential: '証書の写真', id_doc: '本人確認資料' }
 const fmt = (iso: string): string => new Date(iso).toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' })
 
 export function StaffProfilePanel({ realm, staffNo, staffName, isAdmin, onClose }: {
@@ -17,6 +17,7 @@ export function StaffProfilePanel({ realm, staffNo, staffName, isAdmin, onClose 
   const [face, setFace] = useState<string | null>(null)
   const [shown, setShown] = useState<Record<string, string | null>>({})
   const [log, setLog] = useState<ViewLogItem[] | null>(null)
+  const [docs, setDocs] = useState<Record<string, string | null>>({})
 
   useEffect(() => {
     let live = true
@@ -37,6 +38,11 @@ export function StaffProfilePanel({ realm, staffNo, staffName, isAdmin, onClose 
   const showCred = (id: string): void => {
     void fetchStaffImage(realm, staffNo, 'credential', id)
       .then((d) => setShown((s) => ({ ...s, [id]: d ? `data:${d.mime};base64,${d.base64}` : null })))
+      .catch((e: unknown) => setErr(e instanceof Error ? e.message : '読み込めませんでした'))
+  }
+  const showDoc = (t: string): void => {
+    void fetchIdDoc(staffNo, t)
+      .then((d) => setDocs((x) => ({ ...x, [t]: d ? `data:${d.mime};base64,${d.base64}` : null })))
       .catch((e: unknown) => setErr(e instanceof Error ? e.message : '読み込めませんでした'))
   }
   const openLog = (): void => { void fetchViewLog(staffNo).then(setLog).catch((e: unknown) => setErr(e instanceof Error ? e.message : '読み込めませんでした')) }
@@ -61,8 +67,39 @@ export function StaffProfilePanel({ realm, staffNo, staffName, isAdmin, onClose 
               <dt>電話番号</dt><dd>{p.phone ?? '—'}</dd>
               <dt>郵便番号</dt><dd>{p.postal_code ?? '—'}</dd>
               <dt>現住所</dt><dd>{p.address ?? '—'}</dd>
+              <dt>最寄駅</dt><dd>{p.nearest_station ?? '—'}</dd>
+              <dt>メール</dt><dd>{p.email ?? '—'}</dd>
+              <dt>本籍</dt><dd>{p.honseki_pref ?? '—'}</dd>
+              <dt>緊急連絡先</dt><dd>{p.emergency.name ? `${p.emergency.name}（${p.emergency.relation ?? '続柄なし'}）${p.emergency.phone ?? ''}` : '—'}</dd>
             </dl>
           </div>
+          <h3 className="sp-h">学歴・業務経歴</h3>
+          {p.education.length === 0 && p.work_history.length === 0 ? <p className="muted">登録がありません。</p> : (
+            <ul className="sp-career">
+              {p.education.map((e, i) => <li key={`e${i}`}>【学歴】{e.school}　{e.entered_year ?? '—'}年入学 〜 {e.graduated_year ?? '—'}年卒業</li>)}
+              {p.work_history.map((w, i) => <li key={`w${i}`}>【業務】{w.company}{w.detail ? `（${w.detail}）` : ''}　{w.from ?? '—'} 〜 {w.to ?? '—'}</li>)}
+            </ul>
+          )}
+          {realm === 'company' && (<>
+            <h3 className="sp-h">本人確認資料</h3>
+            {p.id_docs.length === 0 ? <p className="muted">登録がありません。</p> : (
+              <div className="sp-docs">
+                {p.id_docs.map((t) => (
+                  <div key={t}>
+                    <strong>{docLabel(t)}</strong>{' '}
+                    {docs[t] === undefined ? <button type="button" className="btn-sm" onClick={() => showDoc(t)}>見る</button> : docs[t] ? <img className="sp-cred" src={docs[t] ?? ''} alt={`${docLabel(t)}の写真`} /> : <span className="muted">写真がありません</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>)}
+          {p.requests.length > 0 && (<>
+            <h3 className="sp-h">申請の状況</h3>
+            <table className="tbl"><thead><tr><th>項目</th><th>内容</th><th>状態</th></tr></thead>
+              <tbody>{p.requests.map((r) => <tr key={r.id}><td>{CATEGORY_LABEL[r.category]}</td><td>{summarizeRequest(r.category, r.payload)}</td>
+                <td><span className={r.status === 'pending' ? 'status st-submitted' : 'status st-reject'}>{STATUS_LABEL[r.status]}</span>{r.note ? ` ${r.note}` : ''}</td></tr>)}</tbody>
+            </table>
+          </>)}
           <h3 className="sp-h">資格・教育・健康診断</h3>
           {p.credentials.length === 0 ? <p className="muted">登録がありません。</p> : (
             <table className="tbl">

@@ -632,3 +632,11 @@ body {
 .sp-h { font-size: 15px; margin: 16px 0 8px; }
 .sp-cred { max-width: 220px; max-height: 160px; border: 1px solid var(--bd); border-radius: 6px; }
 .sp-log { margin-top: 16px; }
+.sp-career { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
+.sp-docs { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.ap-box { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--bd); }
+.ap-box:first-child { border-top: none; }
+.ap-main { font-size: 14px; }
+.ap-diff { font-size: 13px; color: var(--t3); margin-top: 4px; }
+.ap-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ap-reject { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
