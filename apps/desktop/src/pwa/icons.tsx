@@ -33,3 +33,23 @@ export function GearIcon() {
     </svg>
   )
 }
+
+/** 設定メニューの項目アイコン（線画・単色） */
+export type MenuIcon = 'basic' | 'address' | 'contact' | 'career' | 'requests' | 'account'
+export function MenuIconSvg({ name }: { name: MenuIcon }) {
+  const sv = (c: ReactElement | ReactElement[]) => <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" focusable="false" {...P}>{c}</svg>
+  switch (name) {
+    case 'basic': // 身分証
+      return sv(<><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="11" r="2" /><path d="M5.5 16c.6-1.6 1.7-2.4 3-2.4s2.4.8 3 2.4M14 9.5h4.5M14 12.5h4.5" /></>)
+    case 'address': // 家
+      return sv(<><path d="M4 11l8-6.5 8 6.5" /><path d="M6 10v9h12v-9M10 19v-5h4v5" /></>)
+    case 'contact': // 電話
+      return sv(<path d="M6.5 4h3l1.5 4-2 1.3a10 10 0 0 0 4.7 4.7l1.3-2 4 1.5v3a2 2 0 0 1-2 2A14.5 14.5 0 0 1 4.5 6a2 2 0 0 1 2-2z" />)
+    case 'career': // 書類
+      return sv(<><path d="M7 3.5h7.5L19 8v12.5H7z" /><path d="M14.5 3.5V8H19M9.5 12.5h6M9.5 16h6" /></>)
+    case 'requests': // 確認
+      return sv(<><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.3l2.5 2.5 4.5-5" /></>)
+    case 'account': // 鍵
+      return sv(<><circle cx="8.5" cy="14.5" r="3.5" /><path d="M11 12l8-8M16 7l2.5 2.5" /></>)
+  }
+}

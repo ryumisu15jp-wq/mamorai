@@ -4,6 +4,7 @@
 // 見られるのは本人・本社PC・管理者・配置されている現場の担当者（本人確認資料は本社・管理者だけ）。本人以外が見ると記録が残る。マイナンバーは預かりません。
 import { useEffect, useRef, useState } from 'react'
 import { changeStaffPin, type Staff } from '../staff.js'
+import { MenuIconSvg, type MenuIcon } from '../icons.js'
 import {
   loadProfile, saveContact, saveCareer, submitRequest, withdrawRequest, loadImage, fileToJpeg,
   type Profile, type Credential, type ProfileRequest,
@@ -44,6 +45,16 @@ function ReqBadge({ reqs, category, doc }: { reqs: ProfileRequest[]; category: R
     : <span className="chip h-off" title={r.note ?? ''}>差し戻し{r.note ? `：${r.note}` : ''}</span>
 }
 
+type Page = 'menu' | 'basic' | 'address' | 'contact' | 'career' | 'requests' | 'account'
+const GROUPS: { key: Exclude<Page, 'menu'>; title: string; sub: string; icon: MenuIcon; cats: RequestCategory[] | null }[] = [
+  { key: 'basic', title: '基本情報', sub: '氏名・顔写真・本人確認資料・本籍', icon: 'basic', cats: ['name', 'face', 'id_doc', 'honseki'] },
+  { key: 'address', title: '住所', sub: '現住所・最寄駅', icon: 'address', cats: ['address'] },
+  { key: 'contact', title: '連絡先', sub: '電話・メール・緊急連絡先', icon: 'contact', cats: [] },
+  { key: 'career', title: '各種経歴', sub: '学歴・業務経歴・資格・教育・健診', icon: 'career', cats: ['credential'] },
+  { key: 'requests', title: '申請の状況', sub: '承認待ち・差し戻し・取り下げ', icon: 'requests', cats: null },
+  { key: 'account', title: 'アカウント', sub: 'PIN（パスワード）の変更・ログアウト', icon: 'account', cats: [] },
+]
+
 type CredForm = { id: string | null; kind: CredentialKind; label: string; obtainedOn: string; expiresOn: string; photo: File | null }
 
 export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: () => void; onLogout: () => void }): JSX.Element {
@@ -51,6 +62,7 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
   const [loadErr, setLoadErr] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null)
   const [imgVer, setImgVer] = useState(0)
+  const [page, setPage] = useState<Page>('menu')
   const [open, setOpen] = useState<'name' | 'address' | 'honseki' | 'cred' | 'pin' | null>(null)
   const [nameF, setNameF] = useState({ name: '', furigana: '' })
   const [addrF, setAddrF] = useState({ postal: '', address: '', station: '' })
@@ -88,17 +100,38 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
 
   return (
     <div className="pwa-page set-page">
-      <button type="button" className="set-back" onClick={onBack}>← 戻る</button>
-      <h1 className="pwa-title">設定</h1>
+      <button type="button" className="set-back" onClick={() => { if (page === 'menu') onBack(); else { setPage('menu'); setNotice(null); setOpen(null); setCred(null) } }}>← 戻る</button>
+      <h1 className="pwa-title">{page === 'menu' ? '設定' : GROUPS.find((g) => g.key === page)?.title}</h1>
       <p className="pwa-lead">{staff.name}（No.{staff.no}）</p>
-      <p className="set-privacy">登録した情報は、警備員名簿・教育記録など、業務に必要な管理のために使います。見られるのは、あなた・本社・管理者・配置されている現場の担当者だけです（本人確認資料は本社・管理者だけ）。本人以外が見ると記録が残ります。マイナンバー（個人番号）とマイナンバーカードは登録しません。</p>
-      <p className="set-privacy set-legend"><span className="chip h-night">申請</span> のある項目は、本社・管理者が確認して承認すると反映されます。それ以外は、保存するとすぐ反映されます。</p>
+      {page === 'menu' && (
+        <nav className="set-menu" aria-label="設定の項目">
+          {GROUPS.map((g) => {
+            const mine = g.cats === null ? reqs : reqs.filter((r) => g.cats?.includes(r.category))
+            const pend = mine.filter((r) => r.status === 'pending').length
+            const rej = mine.filter((r) => r.status === 'rejected').length
+            return (
+              <button key={g.key} type="button" className="set-menu-item" onClick={() => { setPage(g.key); setNotice(null) }}>
+                <span className="set-menu-ico"><MenuIconSvg name={g.icon} /></span>
+                <span className="set-menu-body">
+                  <span className="set-menu-title">{g.title}</span>
+                  <span className="set-menu-sub">{g.sub}</span>
+                  {(pend > 0 || rej > 0) && <span className="set-menu-badges">{pend > 0 && <span className="chip h-night">承認待ち {pend}</span>}{rej > 0 && <span className="chip h-off">差し戻し {rej}</span>}</span>}
+                </span>
+                <span className="set-menu-go" aria-hidden="true">›</span>
+              </button>
+            )
+          })}
+        </nav>
+      )}
+      {page === 'menu' && <p className="set-privacy">登録した情報は、警備員名簿・教育記録など、業務に必要な管理のために使います。見られるのは、あなた・本社・管理者・配置されている現場の担当者だけです（本人確認資料は本社・管理者だけ）。本人以外が見ると記録が残ります。マイナンバー（個人番号）とマイナンバーカードは登録しません。</p>}
+      {page === 'menu' && <p className="set-privacy">氏名・住所・本籍・顔写真・本人確認資料・資格は、申請すると本社・管理者が確認して承認し、反映されます。電話・メール・緊急連絡先・学歴・業務経歴は、保存するとすぐ反映されます。</p>}
+
 
       {loadErr && <p className="pwa-err" role="alert">{loadErr}</p>}
       {notice && <p className={notice.ok ? 'set-ok' : 'pwa-err'} role="status">{notice.text}</p>}
 
       {p && (<>
-        {reqs.length > 0 && (
+        {page === 'requests' && reqs.length > 0 && (
           <section className="pwa-card" aria-label="申請の状況">
             <h2 className="set-h">申請の状況{pendingCount > 0 ? `（承認待ち ${pendingCount}件）` : ''}</h2>
             <ul className="set-req-list">
@@ -115,8 +148,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
             </ul>
           </section>
         )}
+        {page === 'requests' && reqs.length === 0 && <p className="pwa-note" style={{ textAlign: 'left' }}>申請はありません。</p>}
 
-        <section className="pwa-card">
+        {page === 'basic' && (<section className="pwa-card">
           <h2 className="set-h">基本情報</h2>
           <dl className="set-fixed">
             <dt>氏名</dt><dd>{p.name}　<ReqBadge reqs={reqs} category="name" /></dd>
@@ -148,9 +182,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
               </div>
             </div>
           )}
-        </section>
+        </section>)}
 
-        <section className="pwa-card">
+        {page === 'basic' && (<section className="pwa-card">
           <h2 className="set-h">顔写真・本人確認資料</h2>
           <div className="set-face">
             <ImageThumb kind="face" id={null} version={imgVer} alt="顔写真" />
@@ -176,9 +210,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
           </label>
           <PhotoPick label={`${docLabel(docType)}を撮って申請`} onPick={(f) => apply('本人確認資料を申請しました（承認待ち）', 'id_doc', { doc_type: docType }, f)} />
           <p className="pwa-note" style={{ textAlign: 'left' }}>マイナンバーカードは使えません（個人番号は預かりません）。</p>
-        </section>
+        </section>)}
 
-        <section className="pwa-card">
+        {page === 'address' && (<section className="pwa-card">
           <h2 className="set-h">住所</h2>
           <dl className="set-fixed">
             <dt>現住所</dt><dd>{p.address ? `${p.postal_code ?? ''} ${p.address}` : '未登録'}　<ReqBadge reqs={reqs} category="address" /></dd>
@@ -195,9 +229,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
               </div>
             </div>
           )}
-        </section>
+        </section>)}
 
-        <section className="pwa-card">
+        {page === 'contact' && (<section className="pwa-card">
           <h2 className="set-h">連絡先・緊急連絡先</h2>
           <label className="pwa-field">電話番号<input className="pwa-input" inputMode="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} placeholder="09012345678" /></label>
           <label className="pwa-field">メールアドレス<input className="pwa-input" type="email" inputMode="email" value={contact.email} onChange={(e) => setContact({ ...contact, email: e.target.value })} /></label>
@@ -206,9 +240,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
           <label className="pwa-field">続柄<input className="pwa-input" value={contact.emergencyRelation} onChange={(e) => setContact({ ...contact, emergencyRelation: e.target.value })} placeholder="例: 配偶者" /></label>
           <label className="pwa-field">電話番号<input className="pwa-input" inputMode="tel" value={contact.emergencyPhone} onChange={(e) => setContact({ ...contact, emergencyPhone: e.target.value })} /></label>
           <button type="button" className="pwa-btn pwa-btn-primary pwa-btn-block" onClick={() => void run('連絡先を保存しました', () => saveContact(contact).then(reload))}>保存する</button>
-        </section>
+        </section>)}
 
-        <section className="pwa-card">
+        {page === 'career' && (<section className="pwa-card">
           <h2 className="set-h">学歴・業務経歴</h2>
           <h3 className="set-h2">学歴</h3>
           {edu.map((e, i) => (
@@ -242,9 +276,9 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
               work.map((w) => ({ company: w.company.trim(), detail: w.detail.trim() || null, from: w.from.trim() || null, to: w.to.trim() || null })),
             ).then(reload))
           }}>経歴を保存する</button>
-        </section>
+        </section>)}
 
-        <section className="pwa-card">
+        {page === 'career' && (<section className="pwa-card">
           <h2 className="set-h">資格・教育・健康診断</h2>
           {p.credentials.length === 0 && <p className="pwa-note" style={{ textAlign: 'left' }}>まだ登録がありません。</p>}
           <ul className="set-cred-list">
@@ -296,10 +330,10 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
                 </div>
               </div>
             )}
-        </section>
+        </section>)}
       </>)}
 
-      <section className="pwa-card">
+      {page === 'account' && (<section className="pwa-card">
         <h2 className="set-h">アカウント</h2>
         {open !== 'pin'
           ? <button type="button" className="pwa-btn pwa-btn-block" onClick={() => { setPin({ old: '', p1: '', p2: '' }); setOpen('pin') }}>PIN（パスワード）を変更する</button>
@@ -319,7 +353,7 @@ export function Settings({ staff, onBack, onLogout }: { staff: Staff; onBack: ()
             </div>
           )}
         <button type="button" className="pwa-btn pwa-btn-block pwa-btn-line" style={{ marginTop: 10 }} onClick={onLogout}>ログアウト</button>
-      </section>
+      </section>)}
     </div>
   )
 }
