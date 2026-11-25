@@ -125,3 +125,23 @@ input,select{font:inherit}
 .set-cred-actions{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
 .set-edit{border-top:1px solid var(--line);padding-top:12px}
 .set-edit-actions{display:flex;gap:8px}
+.set-h2{font-size:14px;font-weight:800;margin:14px 0 8px}
+.set-legend{margin-top:-4px}
+.set-req-list{list-style:none}
+.set-req{padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.set-req:first-child{border-top:none}
+.set-doc{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.set-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.set-row .pwa-input{margin-top:0;padding:10px;min-width:0}
+.set-row-col{flex-direction:column;align-items:stretch}
+.set-year{width:92px;flex:none}
+/* 設定メニュー（項目ごとのボタン） */
+.set-menu{display:flex;flex-direction:column;gap:12px}
+.set-menu-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 14px;min-height:84px;color:var(--ink)}
+.set-menu-item:active{background:#F4F6F9}
+.set-menu-ico{flex:none;color:var(--muted);display:flex}
+.set-menu-body{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.set-menu-title{font-size:17px;font-weight:800}
+.set-menu-sub{font-size:13px;color:var(--muted);line-height:1.45}
+.set-menu-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.set-menu-go{flex:none;font-size:26px;color:var(--muted);line-height:1}

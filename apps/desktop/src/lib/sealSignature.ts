@@ -8,10 +8,15 @@ export function surnameOf(name: string): string {
   return t.length > 0 ? t : name.trim()
 }
 
+/** SVG/HTML に埋め込む文字列のエスケープ（氏名は DB の値＝外部入力。dangerouslySetInnerHTML で使われるため必須）。 */
+export function escapeXml(v: string): string {
+  return v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
 /** 認印風の丸印SVG（朱色）。姓を縦（2文字）/中央（1文字）に配置。size=mm相当のpx。 */
 export function buildSealSvg(name: string, sizePx = 56): string {
   const s = surnameOf(name)
-  const chars = [...s].slice(0, 2)
+  const chars = [...s].slice(0, 2).map(escapeXml)
   const cx = sizePx / 2
   const r = sizePx / 2 - 2
   const red = '#c0392b'
@@ -24,14 +29,14 @@ export function buildSealSvg(name: string, sizePx = 56): string {
       `<text x="${cx}" y="${y1}" fill="${red}" font-size="${sizePx * 0.36}" text-anchor="middle" dominant-baseline="central" font-family="'Yu Mincho','Hiragino Mincho ProN',serif" font-weight="700">${chars[0]}</text>` +
       `<text x="${cx}" y="${y2}" fill="${red}" font-size="${sizePx * 0.36}" text-anchor="middle" dominant-baseline="central" font-family="'Yu Mincho','Hiragino Mincho ProN',serif" font-weight="700">${chars[1]}</text>`
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${sizePx}" height="${sizePx}" viewBox="0 0 ${sizePx} ${sizePx}" role="img" aria-label="印 ${s}">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${sizePx}" height="${sizePx}" viewBox="0 0 ${sizePx} ${sizePx}" role="img" aria-label="印 ${escapeXml(s)}">` +
     `<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${red}" stroke-width="${Math.max(2, sizePx * 0.045)}"/>${text}</svg>`
 }
 
 /** 署名（氏名をやや手書き風に）。SVGテキストで返す。 */
 export function buildSignatureSvg(name: string, widthPx = 120, heightPx = 28): string {
-  const esc = name.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!))
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}" role="img" aria-label="署名 ${name}">` +
+  const esc = escapeXml(name)
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}" role="img" aria-label="署名 ${esc}">` +
     `<text x="4" y="${heightPx * 0.72}" fill="#1a2a44" font-size="${heightPx * 0.62}" font-style="italic" font-family="'Yu Mincho','Hiragino Mincho ProN',serif">${esc}</text></svg>`
 }
 
